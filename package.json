@@ -1,0 +1,64 @@
+{
+    "name": "vscode-kanban",
+    "displayName": "Kanban",
+    "description": "Kanban board for Visual Studio Code.",
+    "version": "0.0.1",
+    "publisher": "mkloubert",
+    "engines": {
+        "vscode": "^1.23.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "Kanban",
+        "Project",
+        "Management",
+        "Todo",
+        "Cards",
+        "multi-root ready"
+    ],
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./out/extension",
+    "contributes": {
+        "commands": []
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    },
+    "icon": "icon.png",
+    "badges": [
+        {
+            "description": "PayPal Donate",
+            "url": "https://img.shields.io/badge/Donate-PayPal-green.svg",
+            "href": "https://paypal.me/MarcelKloubert"
+        }
+    ],
+    "author": {
+        "name": "Marcel Joachim Kloubert"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/mkloubert/vscode-kanban"
+    },
+    "bugs": {
+        "url": "https://github.com/mkloubert/vscode-kanban/issues"
+    },
+    "readmeFilename": "README.md",
+    "devDependencies": {
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.6",
+        "tslint": "^5.8.0",
+        "@types/node": "^7.0.43",
+        "@types/mocha": "^2.2.42"
+    },
+    "dependencies": {
+        "vscode-helpers": "^2.2.0"
+    }
+}

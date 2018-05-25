@@ -1,0 +1,4 @@
+
+Icons:
+    - /icon.png (Erik Ragnar Eliasson; http://www.erikeliasson.io/)
+    - /img/share/* (https://simplesharingbuttons.com)
