@@ -1,0 +1,16 @@
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body main {
+    padding-bottom: 10px;
+    padding-top: 70px;
+    height: 100%;
+}
+
+body main .row .col {
+    padding-bottom: 10px;
+}

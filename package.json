@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -23,7 +23,13 @@
     ],
     "main": "./out/extension",
     "contributes": {
-        "commands": []
+        "commands": [
+            {
+                "command": "extension.kanban.openBoard",
+                "title": "Open Board ...",
+                "category": "Kanban"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
@@ -52,13 +58,15 @@
     },
     "readmeFilename": "README.md",
     "devDependencies": {
-        "typescript": "^2.6.1",
-        "vscode": "^1.1.6",
-        "tslint": "^5.8.0",
+        "@types/lodash": "^4.14.109",
+        "@types/mocha": "^2.2.42",
         "@types/node": "^7.0.43",
-        "@types/mocha": "^2.2.42"
+        "tslint": "^5.8.0",
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.6"
     },
     "dependencies": {
+        "lodash": "^4.17.10",
         "vscode-helpers": "^2.2.0"
     }
 }

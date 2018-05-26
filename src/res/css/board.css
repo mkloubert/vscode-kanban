@@ -1,0 +1,21 @@
+
+#vsckb-add-card-modal .modal-footer .btn .fa {
+    margin-right: 4px;
+}
+
+#vsckb-add-card-modal .modal-dialog {
+    max-width: 75% !important;
+}
+
+body main .row .col .vsckb-card .vsckb-kanban-card .vsckb-no-description {
+    font-style: italic;
+}
+
+body main .row .col .vsckb-card {
+    height: 100%;
+}
+
+body main .row .col .vsckb-card .card-body {
+    height: 100%;
+    overflow: auto;
+}
