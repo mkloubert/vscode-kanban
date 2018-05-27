@@ -2,6 +2,33 @@
 let allCards;
 let nextKanbanCardId;
 
+function vsckb_get_cards_sorted(type) {
+    return allCards[type].sort((x, y) => {
+        // first compare by type
+        const COMP_0 = vsckb_get_card_type_sort_val( x ) - 
+                       vsckb_get_card_type_sort_val( y );
+        if (0 !== COMP_0) {
+            return COMP_0;
+        }
+
+        // them by title
+        return vsckb_get_sort_val( vsckb_normalize_str(x.title), 
+                                   vsckb_normalize_str(y.title) );
+    });
+}
+
+function vsckb_get_card_type_sort_val(item) {
+    switch (vsckb_normalize_str(item.type)) {
+        case 'emergency':
+            return -2;
+
+        case 'bug':
+            return -1;
+    }
+
+    return 0;
+}
+
 function vsckb_refresh_card_view() {
     nextKanbanCardId = -1;
 
@@ -11,7 +38,7 @@ function vsckb_refresh_card_view() {
 
         CARD_BODY.html('');
 
-        vsckb_sort_by(allCards[TYPE], i => vsckb_normalize_str(i.title)).forEach((i) => {
+        vsckb_get_cards_sorted(TYPE).forEach((i) => {
             const ID = ++nextKanbanCardId;
             const DROP_DOWN_ID = `vsckb-dropdownMenuButton-${ ID }`;
 
@@ -19,7 +46,7 @@ function vsckb_refresh_card_view() {
             const CARD_LIST = allCards[CARD_TYPE];
 
             const NEW_ITEM = jQuery('<div class="card vsckb-kanban-card border border-dark">' +
-                                    '<div class="card-header font-weight-bold text-white bg-dark">' + 
+                                    '<div class="card-header font-weight-bold">' + 
                                     '<span class="vsckb-title" />' + 
                                     '<div class="vsckb-buttons float-right" />' + 
                                     '</div>' + 
@@ -32,7 +59,6 @@ function vsckb_refresh_card_view() {
             const NEW_ITEM_BODY = NEW_ITEM.find('.card-body');
 
             const NEW_ITEM_BUTTONS = NEW_ITEM_HEADER.find('.vsckb-buttons');
-
 
             // delete button
             {
@@ -48,14 +74,11 @@ function vsckb_refresh_card_view() {
                     });
 
                     WIN.find('.modal-footer .vsckb-yes-btn').off('click').on('click', function() {
-                        if (CARD_LIST === allCards[CARD_TYPE]) {
-                            allCards[CARD_TYPE] = CARD_LIST.filter(x => x !== i);
+                        vsckb_remove_item(CARD_TYPE, i);
+                        vsckb_save_board();
 
-                            NEW_ITEM.remove();
-                            
-                            vsckb_save_board();
-                        }
-
+                        vsckb_refresh_card_view();
+                        
                         WIN.modal('hide');
                     });
 
@@ -98,6 +121,9 @@ function vsckb_refresh_card_view() {
                     const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
                     DESCRIPTION_FIELD.val( vsckb_to_string(i.description) );
 
+                    const TYPE_FIELD = WIN.find('#vsckb-edit-card-type');
+                    TYPE_FIELD.val( vsckb_normalize_str(i.type) );
+
                     WIN.attr('vsckb-type', CARD_TYPE);
 
                     vsckb_win_header_from_card_type(WIN_HEADER, CARD_TYPE);
@@ -117,9 +143,15 @@ function vsckb_refresh_card_view() {
                         if ('' === description) {
                             description = undefined;
                         }
+
+                        let type = vsckb_normalize_str( TYPE_FIELD.val() );
+                        if ('' === type) {
+                            type = undefined;
+                        }
             
                         i.title = TITLE;
                         i.description = description;
+                        i.type = type;
             
                         vsckb_save_board();
                         vsckb_refresh_card_view();
@@ -138,7 +170,7 @@ function vsckb_refresh_card_view() {
 
             const DESC = vsckb_to_string(i.description).trim();
             if ('' === DESC) {
-                NEW_ITEM_BODY.append( jQuery('<span class="vsckb-no-description" />').text('No description') );
+                NEW_ITEM_BODY.hide();
             } else {
                 const HTML = vsckb_to_string(
                     jQuery('<span />').text(DESC)
@@ -148,11 +180,45 @@ function vsckb_refresh_card_view() {
                 NEW_ITEM_BODY.html( HTML.split('\n').join('<br />') );
             }
 
+            let newItemHeaderBgColor = 'bg-info';
+            let newItemHeaderTextColor = 'text-dark';
+            switch (vsckb_normalize_str(i.type)) {
+                case 'bug':
+                    newItemHeaderBgColor = 'bg-dark';
+                    newItemHeaderTextColor = 'text-white';
+                    break;
+
+                case 'emergency':
+                    newItemHeaderBgColor = 'bg-danger';
+                    newItemHeaderTextColor = 'text-white';
+                    break;
+            }
+
+            NEW_ITEM.find('.card-header')
+                    .addClass(newItemHeaderBgColor)
+                    .addClass(newItemHeaderTextColor);
+
+            const UPDATE_BORDER = (borderClass, borderWidth) => {
+                NEW_ITEM.removeClass('border-dark')
+                        .removeClass('border-primary')
+                        .addClass(borderClass);
+            };
+
+            NEW_ITEM.on('mouseleave', function() {
+                UPDATE_BORDER('border-dark');
+            }).on('mouseenter', function() {
+                UPDATE_BORDER('border-primary');
+            });
+
             NEW_ITEM.appendTo(CARD_BODY);
 
             vsckb_update_card_item_footer(NEW_ITEM, i);
         });
     }
+}
+
+function vsckb_remove_item(type, item) {
+    allCards[type] = allCards[type].filter(x => x !== item);
 }
 
 function vsckb_save_board() {
@@ -179,7 +245,7 @@ function vsckb_update_card_item_footer(item, entry) {
             return;
         }
 
-        allCards[CARD_TYPE] = CARD_LIST.filter(x => x !== entry);
+        vsckb_remove_item(CARD_TYPE, entry);
 
         allCards[target].push(entry);    
 
@@ -385,6 +451,9 @@ jQuery(() => {
 
         const DESCRIPTION_FIELD = WIN.find('#vsckb-new-card-description');
         DESCRIPTION_FIELD.val('');
+
+        const TYPE_FIELD = WIN.find('#vsckb-new-card-type');
+        TYPE_FIELD.val('');
         
         WIN.attr('vsckb-type', TYPE);
 
@@ -413,9 +482,15 @@ jQuery(() => {
                 description = undefined;
             }
 
+            let type = vsckb_normalize_str( TYPE_FIELD.val() );
+            if ('' === type) {
+                type = undefined;
+            }
+
             allCards[ TYPE ].push({
                 title: TITLE,
-                description: description
+                description: description,
+                type: type
             });
 
             vsckb_save_board();
@@ -452,6 +527,18 @@ jQuery(() => {
         } catch (e) {
             vsckb_log(`window.addEventListener.message: ${ vsckb_to_string(e) }`);
         }
+    });
+});
+
+jQuery(() => {
+    jQuery('.modal .modal-body .vsckb-card-type-list').each(function() {
+        const LIST = jQuery(this);
+
+        const SELECT = LIST.find('select');
+
+        SELECT.append('<option value="bug">Bug</option>')
+              .append('<option value="emergency">Emergency</option>')
+              .append('<option value="" selected>Note</option>');
     });
 });
 

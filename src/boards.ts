@@ -58,6 +58,10 @@ export interface BoardCard {
      * The title.
      */
     title: string;
+    /**
+     * The type.
+     */
+    type?: string;
 }
 
 /**
@@ -244,6 +248,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         <input type="text" class="form-control" id="vsckb-new-card-title">
                     </div>
 
+                    <div class="form-group vsckb-card-type-list">
+                        <label for="vsckb-new-card-type">Type</label>
+                        <select id="vsckb-new-card-type" class="form-control"></select>
+                    </div>
+
                     <div class="form-group">
                         <label for="vsckb-new-card-description">Description</label>
                         <textarea class="form-control" id="vsckb-new-card-description" rows="10"></textarea>
@@ -304,6 +313,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                     <div class="form-group">
                         <label for="vsckb-edit-card-title">Title</label>
                         <input type="text" class="form-control" id="vsckb-edit-card-title">
+                    </div>
+
+                    <div class="form-group vsckb-card-type-list">
+                        <label for="vsckb-edit-card-type">Type</label>
+                        <select id="vsckb-edit-card-type" class="form-control"></select>
                     </div>
 
                     <div class="form-group">

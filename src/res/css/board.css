@@ -43,3 +43,10 @@ body main .row .col .vsckb-card .card-body {
 .vsckb-kanban-card .card-footer .vsckb-buttons .btn {
     margin: 0;
 }
+
+.vsckb-kanban-card .card-body {
+    max-height: 192px;
+    overflow-x: none;
+    overflow-y: auto;
+    word-wrap: break-word;
+}

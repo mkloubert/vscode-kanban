@@ -125,8 +125,8 @@ export function generateFooter(opts: GenerateFooterOptions) {
     <link rel="stylesheet" href="${ opts.getResourceUri('css/style.css') }">
     <link rel="stylesheet" href="${ opts.getResourceUri('css/' + opts.styleFile + '.css') }" vsckb-style="custom">
 
-    <script src="${ opts.getResourceUri('js/script.js') }"></script>
-    <script src="${ opts.getResourceUri('js/' + opts.scriptFile + '.js') }"></script>
+    <script src="${ opts.getResourceUri('js/script.js') }" crossorigin="anonymous"></script>
+    <script src="${ opts.getResourceUri('js/' + opts.scriptFile + '.js') }" crossorigin="anonymous"></script>
 
 ${ opts.getFooter ? opts.getFooter() : '' }
 
@@ -154,8 +154,8 @@ export function generateHeader(opts: GenerateHeaderOptions) {
         <link rel="stylesheet" href="${ opts.getResourceUri('css/font-awesome.css') }">
         <link rel="stylesheet" href="${ opts.getResourceUri('css/bootstrap.min.css') }" vsckb-style="bootstrap">
 
-        <script src="${ opts.getResourceUri('js/jquery.min.js') }"></script>
-        <script src="${ opts.getResourceUri('js/bootstrap.bundle.min.js') }"></script>
+        <script src="${ opts.getResourceUri('js/jquery.min.js') }" crossorigin="anonymous"></script>
+        <script src="${ opts.getResourceUri('js/bootstrap.bundle.min.js') }" crossorigin="anonymous"></script>
 
         <script>
             const vscode = acquireVsCodeApi();
@@ -177,10 +177,14 @@ export function generateHeader(opts: GenerateHeaderOptions) {
                 } catch (e) { }
             }
 
-            window.onerror = function() {
-                vsckb_log(
-                    JSON.stringify(arguments)
-                );
+            window.onerror = function(message, url, line, column, error) {
+                vsckb_log({
+                    message: message,
+                    url: url,
+                    line: line,
+                    column: column,
+                    error: error
+                });
 
                 return false;
             };
