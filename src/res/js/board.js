@@ -63,7 +63,7 @@ function vsckb_refresh_card_view() {
             // delete button
             {
                 const DELETE_BTN = jQuery('<a class="btn btn-sm" title="Delete Card">' + 
-                                          '<i class="fa fa-eraser" aria-hidden="true"></i>' + 
+                                          '<i class="fa fa-trash" aria-hidden="true"></i>' + 
                                           '</a>');
 
                 DELETE_BTN.on('click', function() {
@@ -399,6 +399,27 @@ jQuery(() => {
         'testing': [],
         'done': [],
     };
+});
+
+jQuery(() => {
+    const WIN = jQuery('#vsckb-clear-done-modal');
+
+    jQuery('#vsckb-card-done .vsckb-buttons .vsckb-clear-btn').on('click', function() {
+        WIN.modal('show');
+    });
+
+    WIN.find('.modal-footer .vsckb-no-btn').on('click', function() {
+        WIN.modal('hide');
+    });
+    
+    WIN.find('.modal-footer .vsckb-yes-btn').on('click', function() {
+        allCards['done'] = [];
+
+        vsckb_save_board();
+        vsckb_refresh_card_view();
+
+        WIN.modal('hide');
+    });
 });
 
 jQuery(() => {

@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import * as HtmlEntities from 'html-entities';
 import * as vscode from 'vscode';
 import * as vscode_helpers from 'vscode-helpers';
 
@@ -46,13 +47,13 @@ export interface GenerateFooterOptions extends ResourceUriResolver {
 /**
  * Options for 'generateHeader()' function.
  */
-export interface GenerateHeaderOptions extends ResourceUriResolver {
+export interface GenerateHeaderOptions extends ResourceUriResolver, WithTitle {
 }
 
 /**
  * Options for 'generateHtmlDocument()' function.
  */
-export interface GenerateHtmlDocumentOptions extends HeaderButtonResolver, ResourceUriResolver {
+export interface GenerateHtmlDocumentOptions extends HeaderButtonResolver, ResourceUriResolver, WithTitle {
     /**
      * The function that generates the (body) content.
      *
@@ -72,7 +73,7 @@ export interface GenerateHtmlDocumentOptions extends HeaderButtonResolver, Resou
 /**
  * Options for 'generateNavBarHeader()' function.
  */
-export interface GenerateNavBarHeaderOptions extends HeaderButtonResolver, ResourceUriResolver {
+export interface GenerateNavBarHeaderOptions extends HeaderButtonResolver, ResourceUriResolver, WithTitle {
 }
 
 /**
@@ -112,6 +113,16 @@ export interface ResourceUriResolver {
 }
 
 /**
+ * An object that can use and handle a document title.
+ */
+export interface WithTitle {
+    /**
+     * The optional title.
+     */
+    title?: string;
+}
+
+/**
  * Generates the common content for footer.
  *
  * @param {GenerateFooterOptions} opts Options.
@@ -143,6 +154,10 @@ ${ opts.getFooter ? opts.getFooter() : '' }
  */
 export function generateHeader(opts: GenerateHeaderOptions) {
     const AJAX_LOADER_16x11 = `${ opts.getResourceUri('img/ajax-loader-16x11.gif') }`;
+
+    const HTML_ENCODER = new HtmlEntities.AllHtmlEntities();
+
+    const DOC_TITLE = getDocumentTitle(opts.title);
 
     return `<!doctype html>
 <html lang="en">
@@ -192,7 +207,7 @@ export function generateHeader(opts: GenerateHeaderOptions) {
             const VSCKB_AJAX_LOADER_16x11 = ${ JSON.stringify( AJAX_LOADER_16x11 ) };
         </script>
 
-        <title>Kanban Board</title>
+        <title>${ HTML_ENCODER.encode(DOC_TITLE) }</title>
     </head>
     <body>
         <div id="vsckb-body-top" class="clearfix"></div>
@@ -209,11 +224,13 @@ export function generateHeader(opts: GenerateHeaderOptions) {
 export function generateHtmlDocument(opts: GenerateHtmlDocumentOptions) {
     return `${ generateHeader({
     getResourceUri: opts.getResourceUri,
+    title: opts.title,
 }) }
 
 ${ generateNavBarHeader({
     getHeaderButtons: opts.getHeaderButtons,
     getResourceUri: opts.getResourceUri,
+    title: opts.title,
 }) }
 
 ${ opts.getContent ? opts.getContent() : '' }
@@ -234,27 +251,31 @@ ${ generateFooter({
  * @return {string} The generated HTML code.
  */
 export function generateNavBarHeader(opts: GenerateNavBarHeaderOptions) {
+    const HTML_ENCODER = new HtmlEntities.AllHtmlEntities();
+
+    const DOC_TITLE = getDocumentTitle(opts.title);
+
     return `
 <header>
     <nav class="navbar navbar-dark fixed-top bg-dark">
         <a class="navbar-brand" href="#">
             <img src="${ opts.getResourceUri('img/icon.svg') }" width="30" height="30" class="d-inline-block align-top" alt="">
-            <span>Kanban Board</span>
+            <span>${ HTML_ENCODER.encode(DOC_TITLE) }</span>
         </a>
 
         <form class="form-inline">
             ${ opts.getHeaderButtons ? opts.getHeaderButtons() : '' }
 
             <div id="vsckb-social-media-btns">
-                <a class="btn btn-dark btn-sm vsckb-btn-with-known-url" vsckb-url="github" title="Open Project On GitHub">
+                <a class="btn btn-dark btn-sm text-white vsckb-btn-with-known-url" vsckb-url="github" title="Open Project On GitHub">
                     <i class="fa fa-github" aria-hidden="true"></i>
                 </a>
 
-                <a class="btn btn-dark btn-sm vsckb-btn-with-known-url" vsckb-url="twitter" title="Follow Author On Twitter">
+                <a class="btn btn-dark btn-sm text-white vsckb-btn-with-known-url" vsckb-url="twitter" title="Follow Author On Twitter">
                     <i class="fa fa-twitter" aria-hidden="true"></i>
                 </a>
 
-                <a class="btn btn-dark btn-sm vsckb-btn-with-known-url" vsckb-url="paypal" title="Support Project via PayPal">
+                <a class="btn btn-dark btn-sm text-white vsckb-btn-with-known-url" vsckb-url="paypal" title="Support Project via PayPal">
                     <i class="fa fa-paypal" aria-hidden="true"></i>
                 </a>
             </div>
@@ -262,4 +283,16 @@ export function generateNavBarHeader(opts: GenerateNavBarHeaderOptions) {
     </nav>
 </header>
 `;
+}
+
+function getDocumentTitle(title: string) {
+    title = vscode_helpers.toStringSafe(title).trim();
+
+    let docTitle = 'Kanban Board';
+
+    if ('' !== title) {
+        docTitle = `${ docTitle } (${ title })`;
+    }
+
+    return docTitle;
 }

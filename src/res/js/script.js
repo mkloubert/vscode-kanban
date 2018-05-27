@@ -20,6 +20,11 @@ function vsckb_normalize_str(val) {
     return vsckb_to_string(val).toLowerCase().trim();
 }
 
+function vsckb_open_url(urlId) {
+    vsckb_post('openKnownUrl',
+               vsckb_normalize_str(urlId));
+}
+
 function vsckb_post(cmd, data) {
     try {
         vscode.postMessage({
@@ -52,3 +57,16 @@ function vsckb_to_string(val) {
 
     return '' + val;
 }
+
+jQuery(() => {
+    jQuery('.vsckb-btn-with-known-url').on('click', function() {
+        const BTN = jQuery(this);
+
+        const URL_ID = vsckb_normalize_str( BTN.attr('vsckb-url') );
+        if ('' === URL_ID) {
+            return;
+        }
+
+        vsckb_open_url(URL_ID);
+    });
+});

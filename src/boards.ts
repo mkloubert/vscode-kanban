@@ -96,6 +96,12 @@ export type SaveBoardEventListener = (board: Board) => any;
 interface WebViewMessage extends vsckb.WebViewMessage {
 }
 
+const KNOWN_URLS = {
+    'github': 'https://github.com/mkloubert/vscode-kanban',
+    'paypal': 'https://paypal.me/MarcelKloubert',
+    'twitter': 'https://twitter.com/mjkloubert',
+};
+
 /**
  * A kanban board.
  */
@@ -215,6 +221,10 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                     <span class="vsckb-title">Done</span>
 
                     <div class="vsckb-buttons float-right">
+                        <a class="btn btn-sm vsckb-clear-btn" title="Clear ...">
+                            <i class="fa fa-eraser" aria-hidden="true"></i>
+                        </a>
+
                         <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
                             <i class="fa fa-plus" aria-hidden="true"></i>
                         </a>
@@ -337,6 +347,34 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         </div>
     </div>
 </div>
+
+<div class="modal" tabindex="-1" role="dialog" id="vsckb-clear-done-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title">Clear <strong>'Done'</strong>?</h5>
+
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <span>Do you really want to delete ALL cards in <strong>Done</strong>?</span>
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-warning text-white font-weight-bold vsckb-no-btn">
+                    <span>NO!</span>
+                </a>
+
+                <a class="btn btn-danger text-white vsckb-yes-btn">
+                    <span>Yes</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 `;
             },
             getResourceUri: GET_RES_URI,
@@ -371,6 +409,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
         await this.postMessage('setBoard',
                                loadedBoard);
+
+        await this.postMessage('setTitleAndFilePath', {
+            file: Path.resolve(this.file.fsPath),
+            title: this.openOptions.title,
+        });
     }
 
     /**
@@ -406,9 +449,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
             opts = <any>{};
         }
 
-        let title = vscode_helpers.toStringSafe(opts.title).trim();
-        if ('' === title) {
-            title = 'New Kanban Board';
+        let webViewTitle = 'Kanban Board';
+
+        const TITLE = vscode_helpers.toStringSafe(opts.title).trim();
+        if ('' !== TITLE) {
+            webViewTitle = `${ webViewTitle } (${ TITLE })`;
         }
 
         let showOptions = opts.showOptions;
@@ -420,7 +465,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         try {
             newPanel = vscode.window.createWebviewPanel(
                 'vscodeKanbanBoard',
-                title,
+                webViewTitle,
                 showOptions,
                 {
                     enableCommandUris: true,
@@ -454,6 +499,15 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                             action = async () => {
                                 await this.onLoaded();
                             };
+                            break;
+
+                        case 'openKnownUrl':
+                            const KU = KNOWN_URLS[ vscode_helpers.normalizeString(msg.data) ];
+                            if (!_.isNil(KU)) {
+                                action = async () => {
+                                    await vsckb.open( KU );
+                                };
+                            }
                             break;
 
                         case 'saveBoard':

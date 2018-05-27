@@ -153,6 +153,11 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
             return;
         }
 
+        let title = vscode_helpers.toStringSafe(this.folder.name).trim();
+        if ('' === title) {
+            title = `Workspace #${ this.folder.index }`;
+        }
+
         await vsckb_boards.openBoard({
             fileResolver: () => this.boardFile,
             saveBoard: async (board) => {
@@ -161,6 +166,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                     this.boardFile.fsPath
                 );
             },
+            title: title,
         });
     }
 
