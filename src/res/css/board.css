@@ -31,6 +31,15 @@ body main .row .col .vsckb-card .card-body {
     padding-right: 8px;
 }
 
-.vsckb-kanban-card .card-header .vsckb-buttons .btn {
+.vsckb-kanban-card .card-header .vsckb-buttons .btn,
+.vsckb-kanban-card .card-footer .vsckb-buttons .btn {
+    margin: 0;
+}
+
+.vsckb-kanban-card .card-footer {
+    padding: 0;
+}
+
+.vsckb-kanban-card .card-footer .vsckb-buttons .btn {
     margin: 0;
 }

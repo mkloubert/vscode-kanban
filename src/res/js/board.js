@@ -7,7 +7,7 @@ function vsckb_refresh_card_view() {
 
     for (const TYPE in allCards) {
         const CARD = jQuery(`#vsckb-card-${ TYPE }`);
-        const CARD_BODY = CARD.find('.card-body');
+        const CARD_BODY = CARD.find('.vsckb-primary-card-body');
 
         CARD_BODY.html('');
 
@@ -24,11 +24,59 @@ function vsckb_refresh_card_view() {
                                     '<div class="vsckb-buttons float-right" />' + 
                                     '</div>' + 
                                     '<div class="card-body text-dark" />' + 
+                                    '<div class="card-footer text-dark">' + 
+                                    '<div class="vsckb-buttons float-right" />' + 
+                                    '</div>' + 
                                     '</div>');
             const NEW_ITEM_HEADER = NEW_ITEM.find('.card-header');
             const NEW_ITEM_BODY = NEW_ITEM.find('.card-body');
 
             const NEW_ITEM_BUTTONS = NEW_ITEM_HEADER.find('.vsckb-buttons');
+
+
+            // delete button
+            {
+                const DELETE_BTN = jQuery('<a class="btn btn-sm" title="Delete Card">' + 
+                                          '<i class="fa fa-eraser" aria-hidden="true"></i>' + 
+                                          '</a>');
+
+                DELETE_BTN.on('click', function() {
+                    const WIN = jQuery('#vsckb-delete-card-modal');
+
+                    WIN.find('.modal-footer .vsckb-no-btn').off('click').on('click', function() {
+                        WIN.modal('hide');
+                    });
+
+                    WIN.find('.modal-footer .vsckb-yes-btn').off('click').on('click', function() {
+                        if (CARD_LIST === allCards[CARD_TYPE]) {
+                            allCards[CARD_TYPE] = CARD_LIST.filter(x => x !== i);
+
+                            NEW_ITEM.remove();
+                            
+                            vsckb_save_board();
+                        }
+
+                        WIN.modal('hide');
+                    });
+
+                    const CONFIRM_MSG = jQuery(`<span>Are you sure to delete <strong class="vsckb-title" /> card of <strong class="vsckb-type" />?</span>`);
+
+                    CONFIRM_MSG.find('.vsckb-title').text(
+                        i.title
+                    );
+                    CONFIRM_MSG.find('.vsckb-type').text(
+                        jQuery(`#vsckb-card-${ CARD_TYPE } .vsckb-primary-card-header span.vsckb-title`).text()
+                    );
+
+                    WIN.find('.modal-body')
+                       .html('')
+                       .append( CONFIRM_MSG );
+
+                    WIN.modal('show');
+                });
+
+                DELETE_BTN.appendTo( NEW_ITEM_BUTTONS );
+            }
 
             // edit button
             {
@@ -85,50 +133,6 @@ function vsckb_refresh_card_view() {
                 EDIT_BTN.appendTo( NEW_ITEM_BUTTONS );
             }
 
-            // delete button
-            {
-                const DELETE_BTN = jQuery('<a class="btn btn-sm" title="Delete Card">' + 
-                                          '<i class="fa fa-eraser" aria-hidden="true"></i>' + 
-                                          '</a>');
-
-                DELETE_BTN.on('click', function() {
-                    const WIN = jQuery('#vsckb-delete-card-modal');
-
-                    WIN.find('.modal-footer .vsckb-no-btn').off('click').on('click', function() {
-                        WIN.modal('hide');
-                    });
-
-                    WIN.find('.modal-footer .vsckb-yes-btn').off('click').on('click', function() {
-                        if (CARD_LIST === allCards[CARD_TYPE]) {
-                            allCards[CARD_TYPE] = CARD_LIST.filter(x => x !== i);
-
-                            NEW_ITEM.remove();
-                            
-                            vsckb_save_board();
-                        }
-
-                        WIN.modal('hide');
-                    });
-
-                    const CONFIRM_MSG = jQuery(`<span>Are you sure to delete <strong class="vsckb-title" /> card of <strong class="vsckb-type" />?</span>`);
-
-                    CONFIRM_MSG.find('.vsckb-title').text(
-                        i.title
-                    );
-                    CONFIRM_MSG.find('.vsckb-type').text(
-                        jQuery(`#vsckb-card-${ CARD_TYPE } .vsckb-primary-card-header span.vsckb-title`).text()
-                    );
-
-                    WIN.find('.modal-body')
-                       .html('')
-                       .append( CONFIRM_MSG );
-
-                    WIN.modal('show');
-                });
-
-                DELETE_BTN.appendTo( NEW_ITEM_BUTTONS );
-            }
-
             NEW_ITEM_HEADER.find('.vsckb-title')
                            .text( vsckb_to_string(i.title).trim() );
 
@@ -146,23 +150,7 @@ function vsckb_refresh_card_view() {
 
             NEW_ITEM.appendTo(CARD_BODY);
 
-            /*
-            NEW_ITEM.on('dragend',function(e){ 
-                e.preventDefault();
-
-                vsckb_log('DROP.1: ' + Object.keys( e ));
-                vsckb_log('DROP.2: ' + $(e.relatedTarget).attr('class'));
-            }).on('dragover',function(e){
-                e.preventDefault();
-
-                // vsckb_log('DRAG_OVER: ' + JSON.stringify( $(e.target).parent().attr('class') ));
-            }).on('dragenter', function (e) {    
-                e.preventDefault();
-                
-                // vsckb_log('DRAG_ENTER: ' + JSON.stringify(e));
-            });*/
-            
-            NEW_ITEM.prop('draggable', true);
+            vsckb_update_card_item_footer(NEW_ITEM, i);
         });
     }
 }
@@ -170,6 +158,121 @@ function vsckb_refresh_card_view() {
 function vsckb_save_board() {
     vsckb_post('saveBoard',
                allCards);
+}
+
+function vsckb_update_card_item_footer(item, entry) {
+    const CARD = item.parents('.vsckb-card');
+    const CARD_ID = CARD.attr('id');
+    const CARD_TYPE = CARD_ID.substr(11);
+    const CARD_BODY = CARD.find('.vsckb-primary-card-body');
+
+    const CARD_LIST = allCards[CARD_TYPE];
+
+    const ITEM_FOOTER = item.find('.card-footer');
+    const ITEM_FOOTER_BUTTONS = ITEM_FOOTER.find('.vsckb-buttons');
+
+    ITEM_FOOTER.hide();
+    ITEM_FOOTER_BUTTONS.html('');
+
+    const MOVE_CARD = (target) => {
+        if (CARD_LIST !== allCards[CARD_TYPE]) {
+            return;
+        }
+
+        allCards[CARD_TYPE] = CARD_LIST.filter(x => x !== entry);
+
+        allCards[target].push(entry);    
+
+        vsckb_save_board();
+        vsckb_refresh_card_view();
+    };
+
+    const ADD_DONE_BTN = () => {
+        const DONE_BTN = jQuery('<a class="btn btn-sm" title="Move To \'Done\'">' + 
+                                '<i class="fa fa-check-circle" aria-hidden="true"></i>' + 
+                                '</a>');
+
+        DONE_BTN.on('click', function() {
+            MOVE_CARD('done');
+        });
+
+        DONE_BTN.appendTo( ITEM_FOOTER_BUTTONS );
+    };
+
+    const ADD_IN_PROGRESS_BTN = (icon) => {
+        const IN_PROGRESS_BTN = jQuery('<a class="btn btn-sm" title="Move To \'In Progress\'">' + 
+                                       '<i class="fa" aria-hidden="true"></i>' + 
+                                       '</a>');
+        IN_PROGRESS_BTN.find('.fa')
+                       .addClass(`fa-${ icon }`);
+
+        IN_PROGRESS_BTN.on('click', function() {
+            MOVE_CARD('in-progress');
+        });
+
+        IN_PROGRESS_BTN.appendTo( ITEM_FOOTER_BUTTONS );
+    };
+
+    const ADD_TEST_BTN = () => {
+        const TEST_BTN = jQuery('<a class="btn btn-sm" title="Move To \'Testing\'">' + 
+                                '<i class="fa fa-heartbeat" aria-hidden="true"></i>' + 
+                                '</a>');
+        
+        TEST_BTN.on('click', function() {
+            MOVE_CARD('testing');
+        });
+
+        TEST_BTN.appendTo( ITEM_FOOTER_BUTTONS );
+    };
+
+    let isVisible = true;
+    switch (CARD_TYPE) {
+        case 'todo':
+            {
+                ADD_IN_PROGRESS_BTN('play-circle');
+            }
+            break;
+
+        case 'in-progress':
+            {
+                const STOP_BTN = jQuery('<a class="btn btn-sm" title="Move To \'Todo\'">' + 
+                                        '<i class="fa fa-stop-circle" aria-hidden="true"></i>' + 
+                                        '</a>');
+                STOP_BTN.on('click', function() {
+                    MOVE_CARD('todo');
+                });
+                STOP_BTN.appendTo( ITEM_FOOTER_BUTTONS );
+
+                ADD_TEST_BTN();                
+                ADD_DONE_BTN();
+            }
+            break;
+
+        case 'testing':
+            {
+                ADD_IN_PROGRESS_BTN('thumbs-down');
+                ADD_DONE_BTN();
+            }
+            break;
+
+        case 'done':
+            {
+                ADD_TEST_BTN();
+
+                const REDO_BTN = jQuery('<a class="btn btn-sm" title="Move To \'In Progress\'">' + 
+                                        '<i class="fa fa-refresh" aria-hidden="true"></i>' + 
+                                        '</a>');
+                REDO_BTN.on('click', function() {
+                    MOVE_CARD('in-progress');
+                });
+                REDO_BTN.appendTo( ITEM_FOOTER_BUTTONS );
+            }
+            break;
+    }
+
+    if (isVisible) {
+        ITEM_FOOTER.show();
+    }
 }
 
 function vsckb_win_header_from_card_type(header, type) {
