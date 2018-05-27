@@ -16,16 +16,58 @@
  */
 
 import * as _ from 'lodash';
+import * as FSExtra from 'fs-extra';
 import * as Path from 'path';
 import * as vsckb from './extension';
 import * as vsckb_html from './html';
+import * as vsckb_workspaces from './workspaces';
 import * as vscode from 'vscode';
 import * as vscode_helpers from 'vscode-helpers';
+
+/**
+ * A board.
+ */
+export interface Board {
+    /**
+     * The cards of 'Todo' section.
+     */
+    'todo': BoardCard[];
+    /**
+     * The cards of 'In Progress' section.
+     */
+    'in-progress': BoardCard[];
+    /**
+     * The cards of 'Testing' section.
+     */
+    'testing': BoardCard[];
+    /**
+     * The cards of 'Done' section.
+     */
+    'done': BoardCard[];
+}
+
+/**
+ * A board card.
+ */
+export interface BoardCard {
+    /**
+     * The (optional) description.
+     */
+    description?: string;
+    /**
+     * The title.
+     */
+    title: string;
+}
 
 /**
  * Options for opening a board.
  */
 export interface OpenBoardOptions {
+    /**
+     * The function that returns the underlying file to use.
+     */
+    fileResolver?: () => vscode.Uri;
     /**
      * Display options for the tab of the underlying view.
      */
@@ -34,7 +76,18 @@ export interface OpenBoardOptions {
      * The title for the view.
      */
     title?: string;
+    /**
+     * An listener for a 'save board' event.
+     */
+    saveBoard?: SaveBoardEventListener;
 }
+
+/**
+ * An listener for a 'save board' event.
+ *
+ * @param {Board} board The board to save.
+ */
+export type SaveBoardEventListener = (board: Board) => any;
 
 interface WebViewMessage extends vsckb.WebViewMessage {
 }
@@ -46,6 +99,17 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     private _html: string | false = false;
     private _openOptions: OpenBoardOptions;
     private _panel: vscode.WebviewPanel;
+    private _saveBoardEventListener: SaveBoardEventListener[];
+
+    /**
+     * Gets the board file to use.
+     */
+    public get file(): vscode.Uri {
+        const RESOLVER = this.openOptions.fileResolver;
+        if (RESOLVER) {
+            return RESOLVER();
+        }
+    }
 
     /**
      * Returns an URI from the 'resources' directory.
@@ -82,6 +146,8 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
      * Initializes the board.
      */
     public async initialize() {
+        this._saveBoardEventListener = [];
+
         const GET_RES_URI = (p: string) => {
             return this.getResourceUri(p);
         };
@@ -93,7 +159,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     <div class="row h-100">
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-dark bg-secondary vsckb-card" id="vsckb-card-todo">
-                <div class="card-header">
+                <div class="card-header font-weight-bold vsckb-primary-card-header">
                     <span class="vsckb-title">Todo</span>
 
                     <div class="vsckb-buttons float-right">
@@ -109,7 +175,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-primary vsckb-card" id="vsckb-card-in-progress">
-                <div class="card-header">
+                <div class="card-header font-weight-bold vsckb-primary-card-header">
                     <span class="vsckb-title">In Progress</span>
 
                     <div class="vsckb-buttons float-right">
@@ -125,7 +191,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-warning vsckb-card" id="vsckb-card-testing">
-                <div class="card-header">
+                <div class="card-header font-weight-bold vsckb-primary-card-header">
                     <span class="vsckb-title">Testing</span>
 
                     <div class="vsckb-buttons float-right">
@@ -141,7 +207,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-success vsckb-card" id="vsckb-card-done">
-                <div class="card-header">
+                <div class="card-header font-weight-bold vsckb-primary-card-header">
                     <span class="vsckb-title">Done</span>
 
                     <div class="vsckb-buttons float-right">
@@ -195,6 +261,32 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         </div>
     </div>
 </div>
+
+<div class="modal" tabindex="-1" role="dialog" id="vsckb-delete-card-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Delete Card</h5>
+
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body"></div>
+
+            <div class="modal-footer">
+                <a class="btn btn-warning text-white font-weight-bold vsckb-no-btn">
+                    <span>NO!</span>
+                </a>
+
+                <a class="btn btn-danger text-white vsckb-yes-btn">
+                    <span>Yes</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 `;
             },
             getResourceUri: GET_RES_URI,
@@ -206,7 +298,46 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
      * Is invoked after the underlying panel has been disposed.
      */
     protected onDispose() {
+        this._saveBoardEventListener = [];
+
         vscode_helpers.tryDispose(this._panel);
+    }
+
+    private async onLoaded() {
+        const FILE = this.file;
+        if (!FILE) {
+            return;
+        }
+
+        let loadedBoard: Board = JSON.parse(
+            await FSExtra.readFile(
+                FILE.fsPath, 'utf8'
+            )
+        );
+
+        if (_.isNil(loadedBoard)) {
+            loadedBoard = newBoard();
+        }
+
+        await this.postMessage('setBoard',
+                               loadedBoard);
+    }
+
+    /**
+     * Adds a listener for a 'save board' event.
+     *
+     * @param {SaveBoardEventListener} listener The listener to add.
+     *
+     * @return {this}
+     */
+    public onSaveBoard(listener: SaveBoardEventListener) {
+        if (listener) {
+            this._saveBoardEventListener.push(
+                listener
+            );
+        }
+
+        return this;
     }
 
     /**
@@ -227,7 +358,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
         let title = vscode_helpers.toStringSafe(opts.title).trim();
         if ('' === title) {
-            title = 'New HTTP Request';
+            title = 'New Kanban Board';
         }
 
         let showOptions = opts.showOptions;
@@ -268,6 +399,30 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                                 } catch { }
                             };
                             break;
+
+                        case 'onLoaded':
+                            action = async () => {
+                                await this.onLoaded();
+                            };
+                            break;
+
+                        case 'saveBoard':
+                            action = async () => {
+                                const BOARD_TO_SAVE: Board = msg.data;
+                                if (BOARD_TO_SAVE) {
+                                    const LISTENERS = vscode_helpers.asArray(this._saveBoardEventListener);
+                                    for (const L of LISTENERS) {
+                                        try {
+                                            await Promise.resolve(
+                                                L(BOARD_TO_SAVE)
+                                            );
+                                        } catch (e) {
+                                            vsckb.showError(e);
+                                        }
+                                    }
+                                }
+                            };
+                            break;
                     }
 
                     if (action) {
@@ -302,6 +457,46 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     public get openOptions(): OpenBoardOptions {
         return this._openOptions;
     }
+
+    /**
+     * Gets the underlying panel.
+     */
+    public get panel(): vscode.WebviewPanel {
+        return this._panel;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public async postMessage(command: string, data?: any) {
+        const MSG: WebViewMessage = {
+            command: command,
+            data: data,
+        };
+
+        return await this.view.postMessage(MSG);
+    }
+
+    /**
+     * Gets the underlying web view.
+     */
+    public get view(): vscode.Webview {
+        return this.panel.webview;
+    }
+}
+
+/**
+ * Creates a new board object.
+ *
+ * @return {Board} The new object.
+ */
+export function newBoard(): Board {
+    return {
+        'todo': [],
+        'in-progress': [],
+        'testing': [],
+        'done': [],
+    };
 }
 
 /**
@@ -315,6 +510,11 @@ export async function openBoard(opts?: OpenBoardOptions) {
     const NEW_BOARD = new KanbanBoard();
 
     await NEW_BOARD.initialize();
+
+    if (opts.saveBoard) {
+        NEW_BOARD.onSaveBoard(opts.saveBoard);
+    }
+
     await NEW_BOARD.open(opts);
 
     return NEW_BOARD;

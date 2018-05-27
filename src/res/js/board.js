@@ -1,38 +1,77 @@
 
-const ALL_CARDS = {
-    'todo': [],
-    'in-progress': [],
-    'testing': [],
-    'done': [],
-};
+let allCards;
+let nextKanbanCardId;
 
 function vsckb_refresh_card_view() {
-    for (const TYPE in ALL_CARDS) {
+    nextKanbanCardId = -1;
+
+    for (const TYPE in allCards) {
         const CARD = jQuery(`#vsckb-card-${ TYPE }`);
         const CARD_BODY = CARD.find('.card-body');
 
         CARD_BODY.html('');
 
-        ALL_CARDS[TYPE].forEach((i) => {
-            const NEW_ITEM = jQuery('<div class="card vsckb-kanban-card">' +
-                                    '<div class="card-header font-weight-bold">' + 
+        vsckb_sort_by(allCards[TYPE], i => vsckb_normalize_str(i.title)).forEach((i) => {
+            const ID = ++nextKanbanCardId;
+            const DROP_DOWN_ID = `vsckb-dropdownMenuButton-${ ID }`;
+
+            const CARD_TYPE = TYPE;
+            const CARD_LIST = allCards[CARD_TYPE];
+
+            const NEW_ITEM = jQuery('<div class="card vsckb-kanban-card border border-dark">' +
+                                    '<div class="card-header font-weight-bold text-white bg-dark">' + 
                                     '<span class="vsckb-title" />' + 
                                     '<div class="vsckb-buttons float-right" />' + 
                                     '</div>' + 
-                                    '<div class="card-body" />' + 
+                                    '<div class="card-body text-dark" />' + 
                                     '</div>');
             const NEW_ITEM_HEADER = NEW_ITEM.find('.card-header');
             const NEW_ITEM_BODY = NEW_ITEM.find('.card-body');
 
-            const NEW_ITEM_HEADER_BUTTONS = NEW_ITEM_HEADER.find('.vsckb-buttons');
-            {
-                const DELETE_BTN = jQuery('<a class="btn btn-sm btn-danger text-white">' + 
-                                          '<i class="fa fa-trash-o" aria-hidden="true"></i>' + 
-                                          '</a>');
-                DELETE_BTN.on('click', function() {
+            const NEW_ITEM_BUTTONS = NEW_ITEM_HEADER.find('.vsckb-buttons');
 
+            // delete button
+            {
+                const DELETE_BTN = jQuery('<a class="btn btn-sm btn-danger" title="Delete Card">' + 
+                                          '<i class="fa fa-eraser" aria-hidden="true"></i>' + 
+                                          '</a>');
+
+                DELETE_BTN.on('click', function() {
+                    const WIN = jQuery('#vsckb-delete-card-modal');
+
+                    WIN.find('.modal-footer .vsckb-no-btn').off('click').on('click', function() {
+                        WIN.modal('hide');
+                    });
+
+                    WIN.find('.modal-footer .vsckb-yes-btn').off('click').on('click', function() {
+                        if (CARD_LIST === allCards[CARD_TYPE]) {
+                            allCards[CARD_TYPE] = CARD_LIST.filter(x => x !== i);
+
+                            NEW_ITEM.remove();
+                            
+                            vsckb_save_board();
+                        }
+
+                        WIN.modal('hide');
+                    });
+
+                    const CONFIRM_MSG = jQuery(`<span>Are you sure to delete <strong class="vsckb-title" /> card inside <strong class="vsckb-type" />?</span>`);
+
+                    CONFIRM_MSG.find('.vsckb-title').text(
+                        i.title
+                    );
+                    CONFIRM_MSG.find('.vsckb-type').text(
+                        jQuery(`#vsckb-card-${ CARD_TYPE } .vsckb-primary-card-header span.vsckb-title`).text()
+                    );
+
+                    WIN.find('.modal-body')
+                       .html('')
+                       .append( CONFIRM_MSG );
+
+                    WIN.modal('show');
                 });
-                DELETE_BTN.appendTo( NEW_ITEM_HEADER_BUTTONS );
+
+                DELETE_BTN.appendTo( NEW_ITEM_BUTTONS );
             }
 
             NEW_ITEM_HEADER.find('.vsckb-title')
@@ -51,9 +90,42 @@ function vsckb_refresh_card_view() {
             }
 
             NEW_ITEM.appendTo(CARD_BODY);
+
+            /*
+            NEW_ITEM.on('dragend',function(e){ 
+                e.preventDefault();
+
+                vsckb_log('DROP.1: ' + Object.keys( e ));
+                vsckb_log('DROP.2: ' + $(e.relatedTarget).attr('class'));
+            }).on('dragover',function(e){
+                e.preventDefault();
+
+                // vsckb_log('DRAG_OVER: ' + JSON.stringify( $(e.target).parent().attr('class') ));
+            }).on('dragenter', function (e) {    
+                e.preventDefault();
+                
+                // vsckb_log('DRAG_ENTER: ' + JSON.stringify(e));
+            });*/
+            
+            NEW_ITEM.prop('draggable', true);
         });
     }
 }
+
+function vsckb_save_board() {
+    vsckb_post('saveBoard',
+               allCards);
+}
+
+
+jQuery(() => {
+    allCards = {
+        'todo': [],
+        'in-progress': [],
+        'testing': [],
+        'done': [],
+    };
+});
 
 jQuery(() => {
     const WIN = jQuery('#vsckb-add-card-modal');
@@ -164,11 +236,12 @@ jQuery(() => {
                 description = undefined;
             }
 
-            ALL_CARDS[ TYPE ].push({
+            allCards[ TYPE ].push({
                 title: TITLE,
                 description: description
             });
 
+            vsckb_save_board();
             vsckb_refresh_card_view();
 
             WIN.modal('hide');
@@ -176,4 +249,35 @@ jQuery(() => {
 
         WIN.modal('show');
     });
+});
+
+jQuery(() => {
+    window.addEventListener('message', (e) => {
+        if (!e) {
+            return;
+        }
+
+        const MSG = e.data;
+        if (!MSG) {
+            return;
+        }
+
+        try {
+            switch (MSG.command) {
+                case 'setBoard':
+                    {
+                        allCards = MSG.data;
+
+                        vsckb_refresh_card_view();
+                    }
+                    break;
+            }
+        } catch (e) {
+            vsckb_log(`window.addEventListener.message: ${ vsckb_to_string(e) }`);
+        }
+    });
+});
+
+jQuery(() => {
+    vsckb_post('onLoaded');
 });

@@ -19,10 +19,19 @@
 
 import * as _ from 'lodash';
 import * as Path from 'path';
-import * as vsckb_boards from './boards';
 import * as vsckb_workspaces from './workspaces';
 import * as vscode from 'vscode';
 import * as vscode_helpers from 'vscode-helpers';
+
+/**
+ * A quick pick item with an action.
+ */
+export interface ActionQuickPickItem extends vscode.QuickPickItem {
+    /**
+     * The (optional) action to invoke.
+     */
+    action?: () => any;
+}
 
 /**
  * A message from and for a WebView.
@@ -50,7 +59,42 @@ export async function activate(context: vscode.ExtensionContext) {
             // openBoard
             vscode.commands.registerCommand('extension.kanban.openBoard', async () => {
                 try {
+                    const QUICK_PICKS: ActionQuickPickItem[] = vsckb_workspaces.getAllWorkspaces().map(ws => {
+                        let name = vscode_helpers.toStringSafe(ws.folder.name).trim();
+                        if ('' === name) {
+                            name = `Workspace #${ ws.folder.index }`;
+                        }
 
+                        return {
+                            action: async () => {
+                                await ws.openBoard();
+                            },
+                            detail: ws.folder.uri.fsPath,
+                            label: name,
+                        };
+                    });
+
+                    if (QUICK_PICKS.length < 1) {
+                        vscode.window.showWarningMessage(
+                            'No workspace found!'
+                        );
+
+                        return;
+                    }
+
+                    let selectedItem: ActionQuickPickItem;
+                    if (1 === QUICK_PICKS.length) {
+                        selectedItem = QUICK_PICKS[0];
+                    } else {
+                        selectedItem = await vscode.window.showQuickPick(QUICK_PICKS, {
+                            canPickMany: false,
+                            placeHolder: 'Select the workspace of your kanban board ...',
+                        });
+                    }
+
+                    if (selectedItem) {
+                        await selectedItem.action();
+                    }
                 } catch (e) {
                     showError(e);
                 }
@@ -58,7 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
         );
     });
 
-    WF.next(() => {
+    WF.next(async () => {
         context.subscriptions.push(
             workspaceWatcher = vscode_helpers.registerWorkspaceWatcher(context, async (ev, folder, workspace?) => {
                 try {
@@ -80,12 +124,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 }
             })
         );
-    });
 
-    WF.next(async () => {
-        // await updateActiveWorkspace();
+        await workspaceWatcher.reload();
 
-        // await vsckb_boards.openBoard();
+        (<any>vsckb_workspaces)['getAllWorkspaces'] = () => {
+            return workspaceWatcher.workspaces
+                                   .map(ws => ws);
+        };
     });
 
     if (!isDeactivating) {

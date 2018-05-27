@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -29,7 +29,22 @@
                 "title": "Open Board ...",
                 "category": "Kanban"
             }
-        ]
+        ],
+        "configuration": {
+            "properties": {
+                "kanban": {
+                    "type": "object",
+                    "scope": "resource",
+                    "properties": {
+                        "openOnStartup": {
+                            "description": "Open the board for that workspace on startup or not.",
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
@@ -58,6 +73,7 @@
     },
     "readmeFilename": "README.md",
     "devDependencies": {
+        "@types/fs-extra": "^5.0.2",
         "@types/lodash": "^4.14.109",
         "@types/mocha": "^2.2.42",
         "@types/node": "^7.0.43",
@@ -66,6 +82,7 @@
         "vscode": "^1.1.6"
     },
     "dependencies": {
+        "fs-extra": "^6.0.1",
         "lodash": "^4.17.10",
         "vscode-helpers": "^2.2.0"
     }

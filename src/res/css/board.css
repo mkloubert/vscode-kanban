@@ -11,6 +11,10 @@ body main .row .col .vsckb-card .vsckb-kanban-card .vsckb-no-description {
     font-style: italic;
 }
 
+body main .row .col .vsckb-card .vsckb-kanban-card {
+    margin-bottom: 8px;
+}
+
 body main .row .col .vsckb-card {
     height: 100%;
 }
@@ -18,4 +22,10 @@ body main .row .col .vsckb-card {
 body main .row .col .vsckb-card .card-body {
     height: 100%;
     overflow: auto;
+}
+
+.vsckb-kanban-card .vsckb-buttons .btn {
+    font-size: 0.75em;
+    margin: 0 0 0 4px;
+    padding: 2px 4px 2px 4px;
 }
