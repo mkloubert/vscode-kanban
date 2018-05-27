@@ -74,7 +74,7 @@ function vsckb_refresh_card_view() {
                     });
 
                     WIN.find('.modal-footer .vsckb-yes-btn').off('click').on('click', function() {
-                        vsckb_remove_item(CARD_TYPE, i);
+                        vsckb_remove_item(i);
                         vsckb_save_board();
 
                         vsckb_refresh_card_view();
@@ -217,8 +217,10 @@ function vsckb_refresh_card_view() {
     }
 }
 
-function vsckb_remove_item(type, item) {
-    allCards[type] = allCards[type].filter(x => x !== item);
+function vsckb_remove_item(item) {
+    for (const CARD_TYPE in allCards) {
+        allCards[CARD_TYPE] = allCards[CARD_TYPE].filter(x => x !== item);
+    }
 }
 
 function vsckb_save_board() {
@@ -245,7 +247,7 @@ function vsckb_update_card_item_footer(item, entry) {
             return;
         }
 
-        vsckb_remove_item(CARD_TYPE, entry);
+        vsckb_remove_item(entry);
 
         allCards[target].push(entry);    
 
