@@ -33,6 +33,8 @@ export interface Config extends vscode.WorkspaceConfiguration {
     readonly openOnStartup?: boolean;
 }
 
+const BOARD_FILENAME = 'vscode-kanban.json';
+
 /**
  * Returns the list of all available workspaces.
  *
@@ -51,7 +53,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
     public get boardFile(): vscode.Uri {
         return vscode.Uri.file(
             Path.resolve(
-                Path.join(this.folder.uri.fsPath, '.vscode/kanban.json')
+                Path.join(this.folder.uri.fsPath, '.vscode/' + BOARD_FILENAME)
             )
         );
     }
@@ -115,15 +117,13 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
      * Opens the kanban board for that workspace.
      */
     public async openBoard() {
-        const VSCODE_DIR = Path.resolve(
-            Path.dirname(
-                this.boardFile.fsPath
-            )
+        const KANBAN_FILE = Path.resolve(
+            this.boardFile.fsPath
         );
 
-        const KANBAN_FILE = Path.resolve(
-            Path.join(
-                VSCODE_DIR, 'kanban.json'
+        const VSCODE_DIR = Path.resolve(
+            Path.dirname(
+                KANBAN_FILE
             )
         );
 

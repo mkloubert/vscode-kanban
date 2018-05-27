@@ -142,6 +142,8 @@ ${ opts.getFooter ? opts.getFooter() : '' }
  * @return {string} The generated HTML code.
  */
 export function generateHeader(opts: GenerateHeaderOptions) {
+    const AJAX_LOADER_16x11 = `${ opts.getResourceUri('img/ajax-loader-16x11.gif') }`;
+
     return `<!doctype html>
 <html lang="en">
     <head>
@@ -182,6 +184,8 @@ export function generateHeader(opts: GenerateHeaderOptions) {
 
                 return false;
             };
+
+            const VSCKB_AJAX_LOADER_16x11 = ${ JSON.stringify( AJAX_LOADER_16x11 ) };
         </script>
 
         <title>Kanban Board</title>

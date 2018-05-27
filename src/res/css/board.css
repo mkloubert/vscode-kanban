@@ -1,10 +1,12 @@
 
-#vsckb-add-card-modal .modal-footer .btn .fa {
+#vsckb-add-card-modal .modal-footer .btn .fa,
+#vsckb-edit-card-modal .modal-footer .btn .fa {
     margin-right: 4px;
 }
 
-#vsckb-add-card-modal .modal-dialog {
-    max-width: 75% !important;
+#vsckb-add-card-modal .modal-dialog,
+#vsckb-edit-card-modal .modal-dialog {
+    max-width: 67% !important;
 }
 
 body main .row .col .vsckb-card .vsckb-kanban-card .vsckb-no-description {
@@ -24,8 +26,11 @@ body main .row .col .vsckb-card .card-body {
     overflow: auto;
 }
 
-.vsckb-kanban-card .vsckb-buttons .btn {
-    font-size: 0.75em;
-    margin: 0 0 0 4px;
-    padding: 2px 4px 2px 4px;
+.vsckb-kanban-card .card-header {
+    margin-right: 0;
+    padding-right: 8px;
+}
+
+.vsckb-kanban-card .card-header .vsckb-buttons .btn {
+    margin: 0;
 }

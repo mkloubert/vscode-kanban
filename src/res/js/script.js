@@ -1,4 +1,16 @@
 
+function vsckb_get_sort_val(x, y) {
+    if (x !== y) {
+        if (x > y) {
+            return 1;
+        } else {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 function vsckb_is_nil(val) {
     return null === val ||
            'undefined' === typeof val;
@@ -23,18 +35,9 @@ function vsckb_post(cmd, data) {
 
 function vsckb_sort_by(arr, sorter) {
     return arr.sort((x, y) => {
-        const SORT_X = sorter(x);
-        const SORT_Y = sorter(y);
-
-        if (SORT_X !== SORT_Y) {
-            if (SORT_X > SORT_Y) {
-                return 1;
-            } else {
-                return -1;
-            }
-        }
-
-        return 0;
+        return vsckb_get_sort_val(
+            sorter(x), sorter(y)
+        );
     });
 }
 

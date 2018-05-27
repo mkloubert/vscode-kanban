@@ -2,3 +2,4 @@
 Icons:
     - /icon.png (Erik Ragnar Eliasson; http://www.erikeliasson.io/)
     - /img/share/* (https://simplesharingbuttons.com)
+    - /src/res/img/ajax-loader-16x11.gif (http://ajaxload.info/)

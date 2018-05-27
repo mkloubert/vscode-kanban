@@ -30,9 +30,64 @@ function vsckb_refresh_card_view() {
 
             const NEW_ITEM_BUTTONS = NEW_ITEM_HEADER.find('.vsckb-buttons');
 
+            // edit button
+            {
+                const EDIT_BTN = jQuery('<a class="btn btn-sm" title="Edit Card">' + 
+                                        '<i class="fa fa-pencil-square-o" aria-hidden="true"></i>' + 
+                                        '</a>');
+
+                EDIT_BTN.on('click', function() {
+                    const WIN = jQuery('#vsckb-edit-card-modal');
+                    const WIN_BODY = WIN.find('.modal-body');
+                    const WIN_FOOTER = WIN.find('.modal-footer');
+                    const WIN_HEADER = WIN.find('.modal-header');
+                    const WIN_CLOSE_BTN = WIN_HEADER.find('button.close');
+                    const WIN_TITLE = WIN_HEADER.find('.modal-title');
+
+                    const TITLE_FIELD = WIN_BODY.find('#vsckb-edit-card-title');
+                    TITLE_FIELD.val( vsckb_to_string(i.title) );
+
+                    const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
+                    DESCRIPTION_FIELD.val( vsckb_to_string(i.description) );
+
+                    WIN.attr('vsckb-type', CARD_TYPE);
+
+                    vsckb_win_header_from_card_type(WIN_HEADER, CARD_TYPE);
+
+                    WIN.find('.modal-footer .vsckb-save-btn').off('click').on('click', function() {
+                        const TITLE = vsckb_to_string(
+                            TITLE_FIELD.val()
+                        ).trim();
+                        if ('' === TITLE) {
+                            TITLE_FIELD.focus();
+                            return;
+                        }
+                        
+                        let description = vsckb_to_string(
+                            DESCRIPTION_FIELD.val()
+                        ).trim();
+                        if ('' === description) {
+                            description = undefined;
+                        }
+            
+                        i.title = TITLE;
+                        i.description = description;
+            
+                        vsckb_save_board();
+                        vsckb_refresh_card_view();
+            
+                        WIN.modal('hide');
+                    });
+
+                    WIN.modal('show');
+                });
+
+                EDIT_BTN.appendTo( NEW_ITEM_BUTTONS );
+            }
+
             // delete button
             {
-                const DELETE_BTN = jQuery('<a class="btn btn-sm btn-danger" title="Delete Card">' + 
+                const DELETE_BTN = jQuery('<a class="btn btn-sm" title="Delete Card">' + 
                                           '<i class="fa fa-eraser" aria-hidden="true"></i>' + 
                                           '</a>');
 
@@ -55,7 +110,7 @@ function vsckb_refresh_card_view() {
                         WIN.modal('hide');
                     });
 
-                    const CONFIRM_MSG = jQuery(`<span>Are you sure to delete <strong class="vsckb-title" /> card inside <strong class="vsckb-type" />?</span>`);
+                    const CONFIRM_MSG = jQuery(`<span>Are you sure to delete <strong class="vsckb-title" /> card of <strong class="vsckb-type" />?</span>`);
 
                     CONFIRM_MSG.find('.vsckb-title').text(
                         i.title
@@ -117,6 +172,56 @@ function vsckb_save_board() {
                allCards);
 }
 
+function vsckb_win_header_from_card_type(header, type) {
+    const WIN_CLOSE_BTN = header.find('button.close');
+
+    header.removeClass('bg-primary')
+          .removeClass('bg-secondary')
+          .removeClass('bg-warning')
+          .removeClass('bg-success')
+          .removeClass('text-dark')
+          .removeClass('text-white');
+
+    WIN_CLOSE_BTN.removeClass('text-dark')
+                 .removeClass('text-white');
+
+    let bgHeaderClass = false;
+    let textHeaderClass = false;
+    let textCloseBtnClass = false;
+    switch ( vsckb_normalize_str(type) ) {
+        case 'todo':
+            bgHeaderClass = 'bg-secondary';
+            textHeaderClass = textCloseBtnClass = 'text-dark';
+            break;
+
+        case 'in-progress':
+            bgHeaderClass = 'bg-primary';
+            textHeaderClass = textCloseBtnClass = 'text-white';
+            break;
+
+        case 'testing':
+            bgHeaderClass = 'bg-warning';
+            textHeaderClass = textCloseBtnClass = 'text-white';
+            break;
+
+        case 'done':
+            bgHeaderClass = 'bg-success';
+            textHeaderClass = textCloseBtnClass = 'text-white';
+            break;    
+    }
+
+    if (false !== bgHeaderClass) {
+        header.addClass(bgHeaderClass);
+    }
+    if (false !== textHeaderClass) {
+        header.addClass(textHeaderClass);
+    }
+
+    if (false !== textCloseBtnClass) {
+        WIN_CLOSE_BTN.addClass(textCloseBtnClass);
+    }
+}
+
 
 jQuery(() => {
     allCards = {
@@ -148,11 +253,21 @@ jQuery(() => {
 });
 
 jQuery(() => {
+    const WIN = jQuery('#vsckb-edit-card-modal');
+    
+    const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
+
+    WIN.on('shown.bs.modal', function (e) {
+        DESCRIPTION_FIELD.focus();
+    });
+});
+
+jQuery(() => {
     jQuery('body main .row .col .vsckb-card .vsckb-buttons .vsckb-add-btn').on('click', function() {
         const BTN = jQuery(this);
 
         const CARD = BTN.parent().parent().parent();
-        const CARD_TITLE = CARD.find('.card-header span.vsckb-title');
+        const CARD_TITLE = CARD.find('.vsckb-primary-card-header span.vsckb-title');
         const TYPE = CARD.attr('id').substr(11).toLowerCase().trim();
 
         const WIN = jQuery('#vsckb-add-card-modal');
@@ -167,58 +282,17 @@ jQuery(() => {
 
         const DESCRIPTION_FIELD = WIN.find('#vsckb-new-card-description');
         DESCRIPTION_FIELD.val('');
-
-        WIN_HEADER.removeClass('bg-primary')
-                  .removeClass('bg-secondary')
-                  .removeClass('bg-warning')
-                  .removeClass('bg-success')
-                  .removeClass('text-dark')
-                  .removeClass('text-white');
-
-        WIN_CLOSE_BTN.removeClass('text-dark')
-                     .removeClass('text-white');
-
+        
         WIN.attr('vsckb-type', TYPE);
 
-        let bgHeaderClass = false;
-        let textHeaderClass = false;
-        let textCloseBtnClass = false;
-        switch (TYPE) {
-            case 'todo':
-                bgHeaderClass = 'bg-secondary';
-                textHeaderClass = textCloseBtnClass = 'text-dark';
-                break;
+        vsckb_win_header_from_card_type(WIN_HEADER, TYPE);
 
-            case 'in-progress':
-                bgHeaderClass = 'bg-primary';
-                textHeaderClass = textCloseBtnClass = 'text-white';
-                break;
+        const WIN_TITLE_TEXT = jQuery('<span>Add Card To <strong class="vsckb-card-title" /></span>');
+        WIN_TITLE_TEXT.find('.vsckb-card-title')
+                      .text( "'" + CARD_TITLE.text() + "'" );
 
-            case 'testing':
-                bgHeaderClass = 'bg-warning';
-                textHeaderClass = textCloseBtnClass = 'text-white';
-                break;
-
-            case 'done':
-                bgHeaderClass = 'bg-success';
-                textHeaderClass = textCloseBtnClass = 'text-white';
-                break;    
-        }
-
-        if (false !== bgHeaderClass) {
-            WIN_HEADER.addClass(bgHeaderClass);
-        }
-        if (false !== textHeaderClass) {
-            WIN_HEADER.addClass(textHeaderClass);
-        }
-
-        if (false !== textCloseBtnClass) {
-            WIN_CLOSE_BTN.addClass(textCloseBtnClass);
-        }
-
-        WIN_TITLE.text(
-            `Add Card to '${ CARD_TITLE.text() }'`
-        );
+        WIN_TITLE.html('')
+                 .append( WIN_TITLE_TEXT );
 
         WIN_FOOTER.find('.btn').off('click').on('click', function() {
             const TITLE = vsckb_to_string(
@@ -275,6 +349,17 @@ jQuery(() => {
         } catch (e) {
             vsckb_log(`window.addEventListener.message: ${ vsckb_to_string(e) }`);
         }
+    });
+});
+
+jQuery(() => {
+    jQuery('.vsckb-card .vsckb-primary-card-body').each(function() {
+        const CARD_BODY = jQuery(this);
+        CARD_BODY.html('');
+
+        const LOADER = jQuery('<img class="vsckb-ajax-loader" />');
+        LOADER.attr('src', VSCKB_AJAX_LOADER_16x11);
+        LOADER.appendTo( CARD_BODY );
     });
 });
 

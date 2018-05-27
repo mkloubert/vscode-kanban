@@ -159,65 +159,65 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     <div class="row h-100">
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-dark bg-secondary vsckb-card" id="vsckb-card-todo">
-                <div class="card-header font-weight-bold vsckb-primary-card-header">
+                <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-dark">
                     <span class="vsckb-title">Todo</span>
 
                     <div class="vsckb-buttons float-right">
-                        <a class="btn btn-sm btn-dark vsckb-add-btn" title="Add Card ...">
-                            <i class="fa fa-plus-circle text-white" aria-hidden="true"></i>
+                        <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
+                            <i class="fa fa-plus" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
 
-                <div class="card-body h-100">&nbsp;</div>
+                <div class="card-body vsckb-primary-card-body h-100 bg-light border border-dark">&nbsp;</div>
             </div>
         </div>
 
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-primary vsckb-card" id="vsckb-card-in-progress">
-                <div class="card-header font-weight-bold vsckb-primary-card-header">
+                <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
                     <span class="vsckb-title">In Progress</span>
 
                     <div class="vsckb-buttons float-right">
-                        <a class="btn btn-sm btn-dark vsckb-add-btn" title="Add Card ...">
-                            <i class="fa fa-plus-circle text-white" aria-hidden="true"></i>
+                        <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
+                            <i class="fa fa-plus" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
 
-                <div class="card-body h-100">&nbsp;</div>
+                <div class="card-body vsckb-primary-card-body h-100 bg-light border border-dark">&nbsp;</div>
             </div>
         </div>
 
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-warning vsckb-card" id="vsckb-card-testing">
-                <div class="card-header font-weight-bold vsckb-primary-card-header">
+                <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
                     <span class="vsckb-title">Testing</span>
 
                     <div class="vsckb-buttons float-right">
-                        <a class="btn btn-sm btn-dark vsckb-add-btn" title="Add Card ...">
-                            <i class="fa fa-plus-circle text-white" aria-hidden="true"></i>
+                        <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
+                            <i class="fa fa-plus" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
 
-                <div class="card-body h-100">&nbsp;</div>
+                <div class="card-body vsckb-primary-card-body h-100 bg-light border border-dark">&nbsp;</div>
             </div>
         </div>
 
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-success vsckb-card" id="vsckb-card-done">
-                <div class="card-header font-weight-bold vsckb-primary-card-header">
+                <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
                     <span class="vsckb-title">Done</span>
 
                     <div class="vsckb-buttons float-right">
-                        <a class="btn btn-sm btn-dark vsckb-add-btn" title="Add Card ...">
-                            <i class="fa fa-plus-circle text-white" aria-hidden="true"></i>
+                        <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
+                            <i class="fa fa-plus" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
 
-                <div class="card-body h-100">&nbsp;</div>
+                <div class="card-body vsckb-primary-card-body h-100 bg-light border border-dark">&nbsp;</div>
             </div>
         </div>
     </div>
@@ -245,7 +245,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                     </div>
 
                     <div class="form-group">
-                        <label for="vsckb-new-card-description">Title</label>
+                        <label for="vsckb-new-card-description">Description</label>
                         <textarea class="form-control" id="vsckb-new-card-description" rows="10"></textarea>
                     </div>
                 </form>
@@ -282,6 +282,42 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
                 <a class="btn btn-danger text-white vsckb-yes-btn">
                     <span>Yes</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" role="dialog" id="vsckb-edit-card-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Card</h5>
+
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="vsckb-edit-card-title">Title</label>
+                        <input type="text" class="form-control" id="vsckb-edit-card-title">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vsckb-edit-card-description">Description</label>
+                        <textarea class="form-control" id="vsckb-edit-card-description" rows="10"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-primary vsckb-save-btn text-white">
+                    <i class="fa fa-floppy-o" aria-hidden="true"></i>
+
+                    <span>Save</span>
                 </a>
             </div>
         </div>
