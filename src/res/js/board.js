@@ -546,6 +546,21 @@ jQuery(() => {
                         vsckb_refresh_card_view();
                     }
                     break;
+
+                case 'setTitleAndFilePath':
+                    {
+                        let docTitle = 'Kanban Board';
+
+                        const TITLE = vsckb_to_string(MSG.data.title).trim();
+                        if ('' !== TITLE) {
+                            docTitle = `${ docTitle } (${ TITLE })`;
+                        }
+
+                        jQuery('header nav.navbar .navbar-brand span').text(
+                            docTitle
+                        ).attr('title', vsckb_to_string(MSG.data.file).trim());
+                    }
+                    break;
             }
         } catch (e) {
             vsckb_log(`window.addEventListener.message: ${ vsckb_to_string(e) }`);
