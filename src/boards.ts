@@ -17,6 +17,7 @@
 
 import * as _ from 'lodash';
 import * as FSExtra from 'fs-extra';
+import * as OS from 'os';
 import * as Path from 'path';
 import * as vsckb from './extension';
 import * as vsckb_html from './html';
@@ -51,9 +52,22 @@ export interface Board {
  */
 export interface BoardCard {
     /**
+     * The user, the card is assigned to.
+     */
+    assignedTo?: {
+        /**
+         * The name of the user.
+         */
+        name?: string;
+    };
+    /**
      * The (optional) description.
      */
     description?: string;
+    /**
+     * The priority.
+     */
+    prio?: number;
     /**
      * The title.
      */
@@ -72,6 +86,18 @@ export interface OpenBoardOptions {
      * The function that returns the underlying file to use.
      */
     fileResolver?: () => vscode.Uri;
+    /**
+     * The Git client.
+     */
+    git?: any;
+    /**
+     * Do not detect username via source control manager.
+     */
+    noScmUser?: boolean;
+    /**
+     * Do not detect username of operating system.
+     */
+    noSystemUser?: boolean;
     /**
      * Display options for the tab of the underlying view.
      */
@@ -258,14 +284,30 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         <input type="text" class="form-control" id="vsckb-new-card-title">
                     </div>
 
-                    <div class="form-group vsckb-card-type-list">
-                        <label for="vsckb-new-card-type">Type</label>
-                        <select id="vsckb-new-card-type" class="form-control"></select>
+                    <div class="row">
+                        <div class="col col-10">
+                            <div class="form-group vsckb-card-type-list">
+                                <label for="vsckb-new-card-type">Type</label>
+                                <select id="vsckb-new-card-type" class="form-control"></select>
+                            </div>
+                        </div>
+
+                        <div class="col col-2">
+                            <div class="form-group">
+                                <label for="vsckb-new-card-prio">Prio</label>
+                                <input type="number" id="vsckb-new-card-prio" class="form-control" placeholder="0"></input>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group vsckb-card-assigned-to">
+                        <label for="vsckb-new-card-assigned-to">Assigned To</label>
+                        <input type="text" class="form-control" id="vsckb-new-card-assigned-to">
                     </div>
 
                     <div class="form-group">
                         <label for="vsckb-new-card-description">Description</label>
-                        <textarea class="form-control" id="vsckb-new-card-description" rows="10"></textarea>
+                        <textarea class="form-control" id="vsckb-new-card-description" rows="7"></textarea>
                     </div>
                 </form>
             </div>
@@ -325,14 +367,30 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         <input type="text" class="form-control" id="vsckb-edit-card-title">
                     </div>
 
-                    <div class="form-group vsckb-card-type-list">
-                        <label for="vsckb-edit-card-type">Type</label>
-                        <select id="vsckb-edit-card-type" class="form-control"></select>
+                    <div class="row">
+                        <div class="col col-10">
+                            <div class="form-group vsckb-card-type-list">
+                                <label for="vsckb-edit-card-type">Type</label>
+                                <select id="vsckb-edit-card-type" class="form-control"></select>
+                            </div>
+                        </div>
+
+                        <div class="col col-2">
+                            <div class="form-group">
+                                <label for="vsckb-edit-card-prio">Prio</label>
+                                <input type="number" id="vsckb-edit-card-prio" class="form-control" placeholder="0"></input>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group vsckb-card-assigned-to">
+                        <label for="vsckb-edit-card-assigned-to">Assigned To</label>
+                        <input type="text" class="form-control" id="vsckb-edit-card-assigned-to">
                     </div>
 
                     <div class="form-group">
                         <label for="vsckb-edit-card-description">Description</label>
-                        <textarea class="form-control" id="vsckb-edit-card-description" rows="10"></textarea>
+                        <textarea class="form-control" id="vsckb-edit-card-description" rows="7"></textarea>
                     </div>
                 </form>
             </div>
@@ -414,6 +472,43 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
             file: Path.resolve(this.file.fsPath),
             title: this.openOptions.title,
         });
+
+        let userName: string;
+
+        if (!vscode_helpers.toBooleanSafe(this.openOptions.noScmUser)) {
+            if (this.openOptions.git) {
+                // try get user name from Git
+                try {
+                    const GIT_FOLDER = Path.resolve(
+                        Path.join(this.openOptions.git.cwd, '.git')
+                    );
+
+                    if (await vscode_helpers.isDirectory(GIT_FOLDER, false)) {
+                        // only, when git repo exists
+
+                        userName = vscode_helpers.toStringSafe(
+                            this.openOptions.git.execSync([ 'config', 'user.name' ])
+                        ).trim();
+                    }
+                } catch { }
+            }
+        }
+
+        if (!vscode_helpers.toBooleanSafe(this.openOptions.noSystemUser)) {
+            if (vscode_helpers.isEmptyString(userName)) {
+                // now try get username from operating system
+
+                try {
+                    userName = OS.userInfo().username;
+                } catch { }
+            }
+        }
+
+        if (!vscode_helpers.isEmptyString(userName)) {
+            await this.postMessage('setCurrentUser', {
+                name: vscode_helpers.toStringSafe(userName).trim(),
+            });
+        }
     }
 
     /**

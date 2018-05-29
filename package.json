@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -36,6 +36,16 @@
                     "type": "object",
                     "scope": "resource",
                     "properties": {
+                        "noScmUser": {
+                            "description": "Do not detect username via source control manager like Git.",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "noSystemUser": {
+                            "description": "Do not detect username of operating system.",
+                            "type": "boolean",
+                            "default": false
+                        },
                         "openOnStartup": {
                             "description": "Open the board for that workspace on startup or not.",
                             "type": "boolean",
@@ -86,6 +96,6 @@
         "fs-extra": "^6.0.1",
         "html-entities": "^1.2.1",
         "lodash": "^4.17.10",
-        "vscode-helpers": "^2.2.0"
+        "vscode-helpers": "^2.5.1"
     }
 }

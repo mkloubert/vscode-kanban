@@ -1,20 +1,53 @@
 
 let allCards;
+let currentUser;
 let nextKanbanCardId;
+
+function vsckb_get_assigned_to_val(field) {
+    let assignedTo = vsckb_to_string( field.val() ).trim();
+    if ('' === assignedTo) {
+        assignedTo = undefined;
+    } else {
+        assignedTo = {
+            name: assignedTo
+        };
+    }
+
+    return assignedTo;
+}
 
 function vsckb_get_cards_sorted(type) {
     return allCards[type].sort((x, y) => {
-        // first compare by type
-        const COMP_0 = vsckb_get_card_type_sort_val( x ) - 
-                       vsckb_get_card_type_sort_val( y );
+        // first compare by prio (DESC)
+        const COMP_0 = vsckb_get_card_prio_sort_val( y ) - 
+                       vsckb_get_card_prio_sort_val( x );
         if (0 !== COMP_0) {
             return COMP_0;
         }
 
-        // them by title
+        // then by type
+        const COMP_1 = vsckb_get_card_type_sort_val( x ) - 
+                       vsckb_get_card_type_sort_val( y );
+        if (0 !== COMP_1) {
+            return COMP_1;
+        }
+
+        // then by title
         return vsckb_get_sort_val( vsckb_normalize_str(x.title), 
                                    vsckb_normalize_str(y.title) );
     });
+}
+
+function vsckb_get_card_prio_sort_val(item) {
+    let prio = parseFloat(
+        vsckb_to_string(item.prio).trim()
+    );
+
+    if (isNaN(prio)) {
+        prio = 0;
+    }
+
+    return prio;
 }
 
 function vsckb_get_card_type_sort_val(item) {
@@ -29,6 +62,62 @@ function vsckb_get_card_type_sort_val(item) {
     return 0;
 }
 
+function vsckb_get_prio_val(field) {
+    let prio = vsckb_to_string(
+        field.val()
+    ).trim();
+
+    if ('' === prio) {
+        return undefined;
+    }
+
+    prio = parseFloat(
+        prio
+    );
+
+    return isNaN(prio) ? false
+                       : prio;
+}
+
+function vsckb_get_user_list() {
+    const USERS = [];
+    const ADD_UNIQUE = (name) => {
+        name = vsckb_to_string(name).trim();
+        if ('' !== name) {
+            if (USERS.map(x => vsckb_normalize_str(x)).indexOf( vsckb_normalize_str(name) ) < 0) {
+                USERS.push(name);
+
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    const CUR_USER = currentUser;
+    if (CUR_USER) {
+        ADD_UNIQUE(
+            CUR_USER.name
+        );
+    }
+
+    const ALL_CARDS = allCards;
+    if (ALL_CARDS) {
+        for (const TYPE in ALL_CARDS) {
+            for (const ITEM of ALL_CARDS[TYPE]) {
+                if (ITEM.assignedTo) {
+                    ADD_UNIQUE( ITEM.assignedTo.name );
+                }
+            }
+        }    
+    }
+
+    return USERS.sort((x, y) => {
+        return vsckb_get_sort_val( vsckb_normalize_str(x) ) - 
+               vsckb_get_sort_val( vsckb_normalize_str(y) );
+    });
+}
+
 function vsckb_refresh_card_view() {
     nextKanbanCardId = -1;
 
@@ -40,7 +129,6 @@ function vsckb_refresh_card_view() {
 
         vsckb_get_cards_sorted(TYPE).forEach((i) => {
             const ID = ++nextKanbanCardId;
-            const DROP_DOWN_ID = `vsckb-dropdownMenuButton-${ ID }`;
 
             const CARD_TYPE = TYPE;
             const CARD_LIST = allCards[CARD_TYPE];
@@ -115,6 +203,11 @@ function vsckb_refresh_card_view() {
                     const WIN_CLOSE_BTN = WIN_HEADER.find('button.close');
                     const WIN_TITLE = WIN_HEADER.find('.modal-title');
 
+                    let user;
+                    if (i.assignedTo) {
+                        user = i.assignedTo.name;
+                    }            
+
                     const TITLE_FIELD = WIN_BODY.find('#vsckb-edit-card-title');
                     TITLE_FIELD.val( vsckb_to_string(i.title) );
 
@@ -123,6 +216,12 @@ function vsckb_refresh_card_view() {
 
                     const TYPE_FIELD = WIN.find('#vsckb-edit-card-type');
                     TYPE_FIELD.val( vsckb_normalize_str(i.type) );
+
+                    const PRIO_FIELD = WIN.find('#vsckb-edit-card-prio');
+                    PRIO_FIELD.val( vsckb_to_string(i.prio).trim() );
+
+                    const ASSIGNED_TO_FIELD = WIN.find('#vsckb-edit-card-assigned-to');
+                    ASSIGNED_TO_FIELD.val( vsckb_to_string(user) );
 
                     WIN.attr('vsckb-type', CARD_TYPE);
 
@@ -134,6 +233,12 @@ function vsckb_refresh_card_view() {
                         ).trim();
                         if ('' === TITLE) {
                             TITLE_FIELD.focus();
+                            return;
+                        }
+
+                        const PRIO = vsckb_get_prio_val(PRIO_FIELD);
+                        if (false === PRIO) {
+                            PRIO_FIELD.focus();
                             return;
                         }
                         
@@ -148,9 +253,11 @@ function vsckb_refresh_card_view() {
                         if ('' === type) {
                             type = undefined;
                         }
-            
+
+                        i.assignedTo = vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD);
                         i.title = TITLE;
                         i.description = description;
+                        i.prio = PRIO;
                         i.type = type;
             
                         vsckb_save_board();
@@ -226,6 +333,24 @@ function vsckb_remove_item(item) {
 function vsckb_save_board() {
     vsckb_post('saveBoard',
                allCards);
+}
+
+function vsckb_setup_assigned_to(field, user) {
+    user = vsckb_normalize_str(user);
+
+    let newVal = '';
+
+    if ('' !== user) {
+        for (const U of vsckb_get_user_list()) {
+            if (vsckb_normalize_str(U) === user) {
+                newVal = U;
+            }
+        }
+    }
+
+    if (false !== newVal) {
+        field.val( newVal );
+    }
 }
 
 function vsckb_update_card_item_footer(item, entry) {
@@ -462,6 +587,11 @@ jQuery(() => {
         const CARD_TITLE = CARD.find('.vsckb-primary-card-header span.vsckb-title');
         const TYPE = CARD.attr('id').substr(11).toLowerCase().trim();
 
+        let user;
+        if (currentUser) {
+            user = currentUser.name;
+        }
+
         const WIN = jQuery('#vsckb-add-card-modal');
         const WIN_BODY = WIN.find('.modal-body');
         const WIN_FOOTER = WIN.find('.modal-footer');
@@ -477,6 +607,12 @@ jQuery(() => {
 
         const TYPE_FIELD = WIN.find('#vsckb-new-card-type');
         TYPE_FIELD.val('');
+
+        const PRIO_FIELD = WIN.find('#vsckb-new-card-prio');
+        PRIO_FIELD.val('');
+
+        const ASSIGNED_TO_FIELD = WIN.find('#vsckb-new-card-assigned-to');
+        vsckb_setup_assigned_to(ASSIGNED_TO_FIELD, user);
         
         WIN.attr('vsckb-type', TYPE);
 
@@ -497,6 +633,12 @@ jQuery(() => {
                 TITLE_FIELD.focus();
                 return;
             }
+
+            const PRIO = vsckb_get_prio_val(PRIO_FIELD);
+            if (false === PRIO) {
+                PRIO_FIELD.focus();
+                return;
+            }
             
             let description = vsckb_to_string(
                 DESCRIPTION_FIELD.val()
@@ -511,8 +653,10 @@ jQuery(() => {
             }
 
             allCards[ TYPE ].push({
-                title: TITLE,
+                assignedTo: vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD),
                 description: description,
+                prio: PRIO,
+                title: TITLE,
                 type: type
             });
 
@@ -544,6 +688,14 @@ jQuery(() => {
                         allCards = MSG.data;
 
                         vsckb_refresh_card_view();
+                    }
+                    break;
+
+                case 'setCurrentUser':
+                    if (MSG.data) {
+                        currentUser = MSG.data;
+                    } else {
+                        currentUser = undefined;
                     }
                     break;
 

@@ -28,6 +28,14 @@ import * as vscode_helpers from 'vscode-helpers';
  */
 export interface Config extends vscode.WorkspaceConfiguration {
     /**
+     * Do not detect username via source control manager.
+     */
+    readonly noScmUser?: boolean;
+    /**
+     * Do not detect username of operating system.
+     */
+    readonly noSystemUser?: boolean;
+    /**
      * Open the board for that workspace on startup.
      */
     readonly openOnStartup?: boolean;
@@ -117,6 +125,11 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
      * Opens the kanban board for that workspace.
      */
     public async openBoard() {
+        const CFG = this.config;
+        if (!CFG) {
+            return;
+        }
+
         const KANBAN_FILE = Path.resolve(
             this.boardFile.fsPath
         );
@@ -160,6 +173,9 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
 
         await vsckb_boards.openBoard({
             fileResolver: () => this.boardFile,
+            git: await this.tryCreateGitClient(),
+            noScmUser: CFG.noScmUser,
+            noSystemUser: CFG.noSystemUser,
             saveBoard: async (board) => {
                 await saveBoardTo(
                     board,
@@ -182,6 +198,12 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
 
     private showError(err: any) {
         return vsckb.showError(err);
+    }
+
+    private tryCreateGitClient() {
+        return vscode_helpers.tryCreateGitClient(
+            this.folder.uri.fsPath
+        );
     }
 }
 

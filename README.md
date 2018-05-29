@@ -53,6 +53,8 @@ Add a `kanban` section:
 
 | Name | Description |
 | ---- | --------- |
+| `noScmUser` | Do not detect username via source control manager like Git. Default: `(false)` |
+| `noSystemUser` | Do not detect username of operating system. Default: `(false)` |
 | `openOnStartup` | Opens a board, after a workspace (folder) has been loaded. Default: `(false)` |
 
 ## Support and contribute [[&uarr;](#table-of-contents)]

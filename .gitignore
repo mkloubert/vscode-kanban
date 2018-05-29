@@ -3,3 +3,4 @@ node_modules
 .vscode-test/
 *.vsix
 /pushall.sh
+/.vscode/vscode-kanban.json
