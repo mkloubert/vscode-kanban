@@ -587,11 +587,6 @@ jQuery(() => {
         const CARD_TITLE = CARD.find('.vsckb-primary-card-header span.vsckb-title');
         const TYPE = CARD.attr('id').substr(11).toLowerCase().trim();
 
-        let user;
-        if (currentUser) {
-            user = currentUser.name;
-        }
-
         const WIN = jQuery('#vsckb-add-card-modal');
         const WIN_BODY = WIN.find('.modal-body');
         const WIN_FOOTER = WIN.find('.modal-footer');
@@ -606,13 +601,11 @@ jQuery(() => {
         DESCRIPTION_FIELD.val('');
 
         const TYPE_FIELD = WIN.find('#vsckb-new-card-type');
-        TYPE_FIELD.val('');
 
         const PRIO_FIELD = WIN.find('#vsckb-new-card-prio');
         PRIO_FIELD.val('');
 
         const ASSIGNED_TO_FIELD = WIN.find('#vsckb-new-card-assigned-to');
-        vsckb_setup_assigned_to(ASSIGNED_TO_FIELD, user);
         
         WIN.attr('vsckb-type', TYPE);
 
@@ -694,6 +687,12 @@ jQuery(() => {
                 case 'setCurrentUser':
                     if (MSG.data) {
                         currentUser = MSG.data;
+
+                        const ASSIGNED_TO_FIELD = jQuery('#vsckb-new-card-assigned-to');
+                        if ('' === vsckb_to_string( ASSIGNED_TO_FIELD.val() ).trim()) {
+                            vsckb_setup_assigned_to(ASSIGNED_TO_FIELD,
+                                                    MSG.data.name);
+                        }
                     } else {
                         currentUser = undefined;
                     }
