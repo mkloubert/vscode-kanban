@@ -602,10 +602,8 @@ jQuery(() => {
 
         const TYPE_FIELD = WIN.find('#vsckb-new-card-type');
 
-        const PRIO_FIELD = WIN.find('#vsckb-new-card-prio');
-        PRIO_FIELD.val('');
-
         const ASSIGNED_TO_FIELD = WIN.find('#vsckb-new-card-assigned-to');
+        const PRIO_FIELD = WIN.find('#vsckb-new-card-prio');
         
         WIN.attr('vsckb-type', TYPE);
 
