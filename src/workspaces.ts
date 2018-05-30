@@ -94,6 +94,10 @@ export interface EventScriptFunctionArguments<TData = any> {
      * The name of the event.
      */
     name: string;
+    /**
+     * An extended 'require()' function, which can also access the modules of that extension.
+     */
+    require: (id: string) => any;
 }
 
 const BOARD_FILENAME = 'vscode-kanban.json';
@@ -276,6 +280,11 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                     this.boardFile.fsPath
                 ),
                 name: context.name,
+                require: (id) => {
+                    return require(
+                        vscode_helpers.toStringSafe(id)
+                    );
+                }
             };
 
             switch (context.name) {

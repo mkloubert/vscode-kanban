@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"

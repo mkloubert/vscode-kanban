@@ -68,12 +68,20 @@ For handling events, you can create a JavaScript file, called `vscode-kanban.js`
 // 
 // s. https://mkloubert.github.io/vscode-kanban/interfaces/_workspaces_.eventscriptfunctionarguments.html
 
+// use any Node.js 7 API, s. https://nodejs.org/
+const fs = require('fs');
+// use VSCode API, s. https://code.visualstudio.com/docs/extensionAPI/vscode-api
+const vscode = require('vscode');
 
 // [OPTIONAL]
 // 
 // Is raised after a CARD has been CREATED.
 exports.onCardCreated = async (args) => {
     // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.cardcreatedeventdata.html
+
+    // access a module of that extension
+    // s. https://github.com/mkloubert/vscode-kanban/blob/master/package.json
+    const FSExtra = args.require('fs-extra');
 };
 
 // [OPTIONAL]
