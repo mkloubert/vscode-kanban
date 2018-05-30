@@ -4,3 +4,5 @@ node_modules
 *.vsix
 /pushall.sh
 /.vscode/vscode-kanban.json
+/typedoc.sh
+/tsdoc

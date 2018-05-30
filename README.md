@@ -15,6 +15,7 @@
 2. [How to use](#how-to-use-)
    * [How to execute](#how-to-execute-)
    * [Settings](#settings-)
+   * [Handle events](#handle-events-)
 3. [Support and contribute](#support-and-contribute-)
 4. [Related projects](#related-projects-)
    * [vscode-helpers](#vscode-helpers-)
@@ -57,6 +58,61 @@ Add a `kanban` section:
 | `noSystemUser` | Do not detect username of operating system. Default: `(false)` |
 | `openOnStartup` | Opens a board, after a workspace (folder) has been loaded. Default: `(false)` |
 
+### Handle events [[&uarr;](#how-to-use-)]
+
+For handling events, you can create a JavaScript file, called `vscode-kanban.js`, inside your `.vscode` subfolder of your workspace and start with the following skeleton (s. [EventScriptModule](https://mkloubert.github.io/vscode-kanban/interfaces/_workspaces_.eventscriptmodule.html) interface):
+
+```javascript
+// all 'args' parameters are based on
+// 'EventScriptFunctionArguments' interface
+// 
+// s. https://mkloubert.github.io/vscode-kanban/interfaces/_workspaces_.eventscriptfunctionarguments.html
+
+
+// [OPTIONAL]
+// 
+// Is raised after a CARD has been CREATED.
+exports.onCardCreated = async (args) => {
+    // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.cardcreatedeventdata.html
+};
+
+// [OPTIONAL]
+// 
+// Is raised after a CARD has been DELETED.
+exports.onCardDeleted = async (args) => {
+    // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.carddeletedeventdata.html
+};
+
+// [OPTIONAL]
+// 
+// Is raised after a CARD has been MOVED.
+exports.onCardMoved = async (args) => {
+    // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.cardmovedeventdata.html
+};
+
+// [OPTIONAL]
+// 
+// Is raised after a CARD has been UPDATED.
+exports.onCardUpdated = async (args) => {
+    // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.cardupdatedeventdata.html
+};
+
+// [OPTIONAL]
+// 
+// Is raised after a column has been cleared.
+exports.onColumnCleared = async (args) => {
+    // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.columnclearedeventdata.html
+};
+
+// [OPTIONAL]
+// 
+// Generic fallback function, if a function is not defined for an event.
+exports.onEvent = async (args) => {
+    // args.name => name of the event
+    // args.data => object with event data  
+};
+```
+
 ## Support and contribute [[&uarr;](#table-of-contents)]
 
 If you like the extension, you can support the project by sending a [donation via PayPal](https://paypal.me/MarcelKloubert) to [me](https://github.com/mkloubert).
@@ -72,6 +128,8 @@ To work with the code:
 * now you can edit and debug there
 * commit your changes to your new branch and sync it with your forked GitHub repo
 * make a [pull request](https://github.com/mkloubert/vscode-kanban/pulls)
+
+The complete API documentation can be found [here](https://mkloubert.github.io/vscode-kanban/).
 
 ## Related projects [[&uarr;](#table-of-contents)]
 

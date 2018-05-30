@@ -19,6 +19,8 @@
 
 import * as _ from 'lodash';
 import * as ChildProcess from 'child_process';
+import * as FSExtra from 'fs-extra';
+import * as Marked from 'marked';
 import * as Path from 'path';
 import * as vsckb_workspaces from './workspaces';
 import * as vscode from 'vscode';
@@ -58,6 +60,24 @@ export interface OpenOptions {
 }
 
 /**
+ * Describes the structure of the package file of that extenstion.
+ */
+export interface PackageFile {
+    /**
+     * The display name.
+     */
+    readonly displayName: string;
+    /**
+     * The (internal) name.
+     */
+    readonly name: string;
+    /**
+     * The version string.
+     */
+    readonly version: string;
+}
+
+/**
  * A message from and for a WebView.
  */
 export interface WebViewMessage {
@@ -72,10 +92,24 @@ export interface WebViewMessage {
 }
 
 let isDeactivating = false;
+const KEY_LAST_KNOWN_VERSION = 'vsckbLastKnownVersion';
+let packageFile: PackageFile;
 let workspaceWatcher: vscode_helpers.WorkspaceWatcherContext<vsckb_workspaces.Workspace>;
 
 export async function activate(context: vscode.ExtensionContext) {
     const WF = vscode_helpers.buildWorkflow();
+
+    // package file
+    WF.next(async () => {
+        try {
+            const CUR_DIR = __dirname;
+            const FILE_PATH = Path.join(CUR_DIR, '../package.json');
+
+            packageFile = JSON.parse(
+                await FSExtra.readFile(FILE_PATH, 'utf8')
+            );
+        } catch { }
+    });
 
     // commands
     WF.next(() => {
@@ -155,6 +189,69 @@ export async function activate(context: vscode.ExtensionContext) {
             return workspaceWatcher.workspaces
                                    .map(ws => ws);
         };
+    });
+
+    // show CHANGELOG
+    WF.next(async () => {
+        let versionToUpdate: string | false = false;
+
+        try {
+            if (packageFile) {
+                const VERSION = vscode_helpers.normalizeString( packageFile.version );
+                if ('' !== VERSION) {
+                    const LAST_VERSION = vscode_helpers.normalizeString(
+                        context.globalState.get(KEY_LAST_KNOWN_VERSION, '')
+                    );
+                    if (LAST_VERSION !== VERSION) {
+                        const CHANGELOG_FILE = Path.resolve(
+                            Path.join(__dirname, '../CHANGELOG.md')
+                        );
+
+                        if (await vscode_helpers.isFile(CHANGELOG_FILE)) {
+                            const MARKDOWN = await FSExtra.readFile(CHANGELOG_FILE, 'utf8');
+
+                            let changeLogView: vscode.WebviewPanel;
+                            try {
+                                changeLogView = vscode.window.createWebviewPanel(
+                                    'vscodeKanbanBoardChangelog',
+                                    'Kanban ChangeLog',
+                                    vscode.ViewColumn.One,
+                                    {
+                                        enableCommandUris: false,
+                                        enableFindWidget: false,
+                                        enableScripts: false,
+                                        retainContextWhenHidden: true,
+                                    }
+                                );
+
+                                changeLogView.webview.html = Marked(MARKDOWN, {
+                                    breaks: true,
+                                    gfm: true,
+                                    mangle: true,
+                                    silent: true,
+                                    tables: true,
+                                    sanitize: true,
+                                });
+                            } catch (e) {
+                                vscode_helpers.tryDispose( changeLogView );
+
+                                throw e;
+                            }
+                        }
+
+                        versionToUpdate = VERSION;
+                    }
+                }
+            }
+        } catch {
+        } finally {
+            try {
+                if (false !== versionToUpdate) {
+                    await context.globalState.update(KEY_LAST_KNOWN_VERSION,
+                                                     versionToUpdate);
+                }
+            } catch { }
+        }
     });
 
     if (!isDeactivating) {

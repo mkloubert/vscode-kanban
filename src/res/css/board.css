@@ -50,3 +50,10 @@ body main .row .col .vsckb-card .card-body {
     overflow-y: auto;
     word-wrap: break-word;
 }
+
+.vsckb-kanban-card .card-footer .vsckb-creation-time {
+    font-size: 0.75em;
+    position: relative;
+    left: 8px;
+    top: 6px;
+}

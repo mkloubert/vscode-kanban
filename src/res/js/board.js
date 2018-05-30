@@ -2,6 +2,8 @@
 let allCards;
 let currentUser;
 let nextKanbanCardId;
+let vsckb_update_card_interval = false;
+let vsckb_is_updating_card_creation_times = false;
 
 function vsckb_get_assigned_to_val(field) {
     let assignedTo = vsckb_to_string( field.val() ).trim();
@@ -79,6 +81,15 @@ function vsckb_get_prio_val(field) {
                        : prio;
 }
 
+function vsckb_get_uid_of_card(card) {
+    let uid = vsckb_to_string(card.attr('vsckb-uid')).trim();
+    if ('' === uid) {
+        uid = undefined;
+    }
+
+    return uid;
+}
+
 function vsckb_get_user_list() {
     const USERS = [];
     const ADD_UNIQUE = (name) => {
@@ -118,7 +129,16 @@ function vsckb_get_user_list() {
     });
 }
 
-function vsckb_refresh_card_view() {
+function vsckb_refresh_card_view(onAdded) {
+    try {
+        if (false !== vsckb_update_card_interval) {
+            clearInterval(vsckb_update_card_interval);
+        }
+    } catch (e) { }
+    finally {
+        vsckb_update_card_interval = false;
+    }
+
     nextKanbanCardId = -1;
 
     for (const TYPE in allCards) {
@@ -129,6 +149,7 @@ function vsckb_refresh_card_view() {
 
         vsckb_get_cards_sorted(TYPE).forEach((i) => {
             const ID = ++nextKanbanCardId;
+            const UNIQUE_ID = `${ ID }-${ Math.floor(Math.random() * 597923979) }-${ (new Date()).getTime() }`;
 
             const CARD_TYPE = TYPE;
             const CARD_LIST = allCards[CARD_TYPE];
@@ -143,6 +164,8 @@ function vsckb_refresh_card_view() {
                                     '<div class="vsckb-buttons float-right" />' + 
                                     '</div>' + 
                                     '</div>');
+            NEW_ITEM.attr('vsckb-uid', UNIQUE_ID);
+
             const NEW_ITEM_HEADER = NEW_ITEM.find('.card-header');
             const NEW_ITEM_BODY = NEW_ITEM.find('.card-body');
 
@@ -163,9 +186,20 @@ function vsckb_refresh_card_view() {
 
                     WIN.find('.modal-footer .vsckb-yes-btn').off('click').on('click', function() {
                         vsckb_remove_item(i);
+                        
                         vsckb_save_board();
 
-                        vsckb_refresh_card_view();
+                        vsckb_refresh_card_view((ctx) => {
+                            if (ctx.item !== i) {
+                                return;
+                            }
+
+                            vsckb_raise_event('card_deleted', {
+                                card: i,
+                                column: CARD_TYPE,
+                                uid: vsckb_get_uid_of_card(NEW_ITEM)
+                            });
+                        });
                         
                         WIN.modal('hide');
                     });
@@ -252,16 +286,35 @@ function vsckb_refresh_card_view() {
                         let type = vsckb_normalize_str( TYPE_FIELD.val() );
                         if ('' === type) {
                             type = undefined;
-                        }
+                        }                        
 
                         i.assignedTo = vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD);
                         i.title = TITLE;
                         i.description = description;
                         i.prio = PRIO;
                         i.type = type;
-            
+                        
                         vsckb_save_board();
-                        vsckb_refresh_card_view();
+            
+                        vsckb_refresh_card_view((ctx) => {
+                            if (ctx.item !== i) {
+                                return;
+                            }
+
+                            let oldCard;
+                            try {
+                                oldCard = JSON.parse(
+                                    JSON.stringify(i)
+                                );
+                            } catch (e) { }
+
+                            vsckb_raise_event('card_updated', {
+                                card: i,
+                                column: CARD_TYPE,
+                                oldCard: oldCard,
+                                uid: vsckb_get_uid_of_card(NEW_ITEM)
+                            });
+                        });
             
                         WIN.modal('hide');
                     });
@@ -288,16 +341,18 @@ function vsckb_refresh_card_view() {
             }
 
             let newItemHeaderBgColor = 'bg-info';
-            let newItemHeaderTextColor = 'text-dark';
+            let newItemHeaderTextColor = 'text-white';
             switch (vsckb_normalize_str(i.type)) {
                 case 'bug':
                     newItemHeaderBgColor = 'bg-dark';
-                    newItemHeaderTextColor = 'text-white';
                     break;
 
                 case 'emergency':
                     newItemHeaderBgColor = 'bg-danger';
-                    newItemHeaderTextColor = 'text-white';
+                    break;
+
+                default:
+                    newItemHeaderTextColor = 'text-dark';
                     break;
             }
 
@@ -320,13 +375,31 @@ function vsckb_refresh_card_view() {
             NEW_ITEM.appendTo(CARD_BODY);
 
             vsckb_update_card_item_footer(NEW_ITEM, i);
+
+            if (onAdded) {
+                onAdded({
+                    element: NEW_ITEM,
+                    item: i,
+                    type: CARD_TYPE,
+                });
+            }
         });
     }
+
+    vsckb_update_card_creation_times();
+
+    vsckb_update_card_interval = setInterval(() => {
+        vsckb_update_card_creation_times();
+    }, 20000);
 }
 
 function vsckb_remove_item(item) {
-    for (const CARD_TYPE in allCards) {
-        allCards[CARD_TYPE] = allCards[CARD_TYPE].filter(x => x !== item);
+    const ALL_CARS = allCards;
+
+    if (ALL_CARS) {
+        for (const CARD_TYPE in ALL_CARS) {
+            ALL_CARS[CARD_TYPE] = ALL_CARS[CARD_TYPE].filter(x => x !== item);
+        }    
     }
 }
 
@@ -353,6 +426,40 @@ function vsckb_setup_assigned_to(field, user) {
     }
 }
 
+function vsckb_update_card_creation_times() {
+    if (vsckb_is_updating_card_creation_times) {
+        return;
+    }
+
+    vsckb_is_updating_card_creation_times = true;
+    try {
+        jQuery('.vsckb-kanban-card .card-footer .vsckb-creation-time').each(function() {
+            try {
+                const CREATION_TIME = jQuery(this);
+                CREATION_TIME.hide();
+                CREATION_TIME.html('');
+                CREATION_TIME.attr('title', '');
+
+                let time = vsckb_to_string( CREATION_TIME.attr('vsckb-time') ).trim();
+                if ('' !== time) {
+                    time = moment.utc(time);
+                    if (time.isValid()) {
+                        CREATION_TIME.text(
+                            vsckb_to_pretty_time(time)
+                        );
+                        CREATION_TIME.attr('title',
+                                           time.local().format('YYYY-MM-DD HH:mm:ss'));
+
+                        CREATION_TIME.show();
+                    }
+                }
+            } catch (e) { }
+        });
+    } finally {
+        vsckb_is_updating_card_creation_times = false;
+    }
+}
+
 function vsckb_update_card_item_footer(item, entry) {
     const CARD = item.parents('.vsckb-card');
     const CARD_ID = CARD.attr('id');
@@ -368,16 +475,23 @@ function vsckb_update_card_item_footer(item, entry) {
     ITEM_FOOTER_BUTTONS.html('');
 
     const MOVE_CARD = (target) => {
-        if (CARD_LIST !== allCards[CARD_TYPE]) {
-            return;
-        }
-
         vsckb_remove_item(entry);
-
-        allCards[target].push(entry);    
-
+        allCards[target].push(entry);
+        
         vsckb_save_board();
-        vsckb_refresh_card_view();
+
+        vsckb_refresh_card_view((ctx) => {
+            if (ctx.item !== entry) {
+                return;
+            }
+
+            vsckb_raise_event('card_moved', {
+                card: ctx.item,
+                from: CARD_TYPE,
+                to: target,
+                uid: vsckb_get_uid_of_card(ctx.element)
+            });
+        });        
     };
 
     const ADD_DONE_BTN = () => {
@@ -463,6 +577,20 @@ function vsckb_update_card_item_footer(item, entry) {
             break;
     }
 
+    let creation_time = vsckb_to_string(entry.creation_time).trim();
+    if ('' !== creation_time) {
+        try {
+            creation_time = moment.utc(creation_time);
+            if (creation_time.isValid()) {
+                const CREATION_TIME_AREA = jQuery('<div class="vsckb-creation-time float-left" />');
+                CREATION_TIME_AREA.attr('vsckb-time',
+                                        creation_time.toISOString());
+
+                CREATION_TIME_AREA.appendTo( ITEM_FOOTER );
+            }
+        } catch (e) { }
+    }
+
     if (isVisible) {
         ITEM_FOOTER.show();
     }
@@ -540,9 +668,17 @@ jQuery(() => {
     });
     
     WIN.find('.modal-footer .vsckb-yes-btn').on('click', function() {
+        const CURRENT_LIST = allCards['done'];
+
         allCards['done'] = [];
 
         vsckb_save_board();
+
+        vsckb_raise_event('column_cleared', {
+            cards: CURRENT_LIST,
+            column: 'done'
+        });
+
         vsckb_refresh_card_view();
 
         WIN.modal('hide');
@@ -643,16 +779,30 @@ jQuery(() => {
                 type = undefined;
             }
 
-            allCards[ TYPE ].push({
+            const NEW_CARD = {
                 assignedTo: vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD),
+                creation_time: moment.utc().toISOString(),
                 description: description,
                 prio: PRIO,
                 title: TITLE,
                 type: type
-            });
+            };
 
+            allCards[ TYPE ].push(NEW_CARD);
+            
             vsckb_save_board();
-            vsckb_refresh_card_view();
+
+            vsckb_refresh_card_view((ctx) => {
+                if (ctx.item !== NEW_CARD) {
+                    return;
+                }
+
+                vsckb_raise_event('card_created', {
+                    card: ctx.item,
+                    column: TYPE,
+                    uid: vsckb_get_uid_of_card(ctx.element)
+                });
+            });
 
             WIN.modal('hide');
         });
@@ -708,6 +858,12 @@ jQuery(() => {
                         jQuery('header nav.navbar .navbar-brand span').text(
                             docTitle
                         ).attr('title', vsckb_to_string(MSG.data.file).trim());
+                    }
+                    break;
+
+                case 'webviewIsVisible':
+                    {
+                        vsckb_update_card_creation_times();
                     }
                     break;
             }

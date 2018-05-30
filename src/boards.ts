@@ -61,6 +61,10 @@ export interface BoardCard {
         name?: string;
     };
     /**
+     * The time, the card has been created.
+     */
+    creation_time?: string;
+    /**
      * The (optional) description.
      */
     description?: string;
@@ -76,6 +80,113 @@ export interface BoardCard {
      * The type.
      */
     type?: string;
+}
+
+/**
+ * Data of a 'card created' event.
+ */
+export interface CardCreatedEventData extends EventDataWithUniqueId {
+    /**
+     * The new card.
+     */
+    card: BoardCard;
+    /**
+     * The name of the column where the card has been created.
+     */
+    column: string;
+}
+
+/**
+ * Data of a 'card deleted' event.
+ */
+export interface CardDeletedEventData extends EventDataWithUniqueId {
+    /**
+     * The new card.
+     */
+    card: BoardCard;
+    /**
+     * The name of the column where the card has been deleted.
+     */
+    column: string;
+}
+
+/**
+ * Data of a 'card moved' event.
+ */
+export interface CardMovedEventData extends EventDataWithUniqueId {
+    /**
+     * The moved card.
+     */
+    card: BoardCard;
+    /**
+     * The name of the area from where the card has been moved.
+     */
+    from: string;
+    /**
+     * The name of the area where the card has been moved to.
+     */
+    to: string;
+}
+
+/**
+ * Data of a 'card updated' event.
+ */
+export interface CardUpdatedEventData extends EventDataWithUniqueId {
+    /**
+     * The card with the current data.
+     */
+    card: BoardCard;
+    /**
+     * The name of the column where the card has been updated.
+     */
+    column: string;
+    /**
+     * The card with the old data.
+     */
+    oldCard: BoardCard;
+}
+
+/**
+ * Data of a 'column cleared' event.
+ */
+export interface ColumnClearedEventData {
+    /**
+     * The cards that have been removed.
+     */
+    cards: BoardCard[];
+    /**
+     * The name of the column that has been cleared.
+     */
+    column: string;
+}
+
+/**
+ * Event data with an unique ID.
+ */
+export interface EventDataWithUniqueId {
+    /**
+     * The unique ID.
+     */
+    uid: string;
+}
+
+/**
+ * An event listener.
+ */
+export type EventListener = (context: EventListenerContext) => any;
+
+/**
+ * A context for an event listener.
+ */
+export interface EventListenerContext {
+    /**
+     * The underlying event data.
+     */
+    data: any;
+    /**
+     * The name of the event.
+     */
+    name: string;
 }
 
 /**
@@ -99,17 +210,26 @@ export interface OpenBoardOptions {
      */
     noSystemUser?: boolean;
     /**
+     * A listener for a 'save board' event.
+     */
+    saveBoard?: SaveBoardEventListener;
+    /**
      * Display options for the tab of the underlying view.
      */
     showOptions?: vscode.ViewColumn;
     /**
+     * A listener for an event.
+     */
+    raiseEvent?: EventListener;
+    /**
      * The title for the view.
      */
     title?: string;
-    /**
-     * An listener for a 'save board' event.
-     */
-    saveBoard?: SaveBoardEventListener;
+}
+
+interface RaiseEvent {
+    data?: any;
+    name: string;
 }
 
 /**
@@ -605,6 +725,18 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                             }
                             break;
 
+                        case 'raiseEvent':
+                            const EVENT_DATA: RaiseEvent = msg.data;
+                            if (EVENT_DATA) {
+                                action = async () => {
+                                    await this.raiseEvent(
+                                        vscode_helpers.normalizeString(EVENT_DATA.name),
+                                        EVENT_DATA.data,
+                                    );
+                                };
+                            }
+                            break;
+
                         case 'saveBoard':
                             action = async () => {
                                 const BOARD_TO_SAVE: Board = msg.data;
@@ -633,6 +765,16 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                 } catch (e) {
                     vsckb.showError(e);
                 }
+            });
+
+            newPanel.onDidChangeViewState((e) => {
+                try {
+                    if (e.webviewPanel.visible) {
+                        this.postMessage('webviewIsVisible').then(() => {
+                        }, () => {
+                        });
+                    }
+                } catch { }
             });
 
             if (false !== this._html) {
@@ -674,6 +816,22 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         };
 
         return await this.view.postMessage(MSG);
+    }
+
+    private async raiseEvent(name: string, data: any) {
+        const LISTENER = this.openOptions.raiseEvent;
+        if (!LISTENER) {
+            return;
+        }
+
+        const CTX: EventListenerContext = {
+            data: data,
+            name: vscode_helpers.normalizeString(name),
+        };
+
+        await Promise.resolve(
+            LISTENER( CTX )
+        );
     }
 
     /**

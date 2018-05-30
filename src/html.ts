@@ -169,6 +169,7 @@ export function generateHeader(opts: GenerateHeaderOptions) {
         <link rel="stylesheet" href="${ opts.getResourceUri('css/font-awesome.css') }">
         <link rel="stylesheet" href="${ opts.getResourceUri('css/bootstrap.min.css') }" vsckb-style="bootstrap">
 
+        <script src="${ opts.getResourceUri('js/moment-with-locales.min.js') }"></script>
         <script src="${ opts.getResourceUri('js/jquery.min.js') }" crossorigin="anonymous"></script>
         <script src="${ opts.getResourceUri('js/bootstrap.bundle.min.js') }" crossorigin="anonymous"></script>
 
