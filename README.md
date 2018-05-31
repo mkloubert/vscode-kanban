@@ -15,6 +15,7 @@
 2. [How to use](#how-to-use-)
    * [How to execute](#how-to-execute-)
    * [Settings](#settings-)
+   * [Markdown support](#markdown-support-)
    * [Handle events](#handle-events-)
 3. [Support and contribute](#support-and-contribute-)
 4. [Related projects](#related-projects-)
@@ -57,6 +58,30 @@ Add a `kanban` section:
 | `noScmUser` | Do not detect username via source control manager like Git. Default: `(false)` |
 | `noSystemUser` | Do not detect username of operating system. Default: `(false)` |
 | `openOnStartup` | Opens a board, after a workspace (folder) has been loaded. Default: `(false)` |
+
+### Markdown support [[&uarr;](#how-to-use-)]
+
+Card descriptions can be formatted with [Markdown](https://en.wikipedia.org/wiki/Markdown), which is parsed by [Showndown](https://github.com/showdownjs/showdown) library.
+
+The extension uses the following [settings](https://github.com/showdownjs/showdown#valid-options):
+
+```json
+{
+    "completeHTMLDocument": false,
+    "encodeEmails": true,
+    "ghCodeBlocks": true,
+    "ghCompatibleHeaderId": true,
+    "headerLevelStart": 3,
+    "openLinksInNewWindow": true,
+    "simpleLineBreaks": true,
+    "simplifiedAutoLink": true,
+    "strikethrough": true,
+    "tables": true,
+    "tasklists": true
+}
+```
+
+Code blocks are parsed by [highlight.js](https://highlightjs.org/) and all [provided languages](https://highlightjs.org/static/demo/) are included and supported.
 
 ### Handle events [[&uarr;](#how-to-use-)]
 

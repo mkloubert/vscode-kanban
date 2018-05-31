@@ -167,9 +167,12 @@ export function generateHeader(opts: GenerateHeaderOptions) {
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
         <link rel="stylesheet" href="${ opts.getResourceUri('css/font-awesome.css') }">
+        <link rel="stylesheet" href="${ opts.getResourceUri('css/hljs-atom-one-dark.css') }">
         <link rel="stylesheet" href="${ opts.getResourceUri('css/bootstrap.min.css') }" vsckb-style="bootstrap">
 
         <script src="${ opts.getResourceUri('js/moment-with-locales.min.js') }"></script>
+        <script src="${ opts.getResourceUri('js/highlight.pack.js') }"></script>
+        <script src="${ opts.getResourceUri('js/showdown.min.js') }"></script>
         <script src="${ opts.getResourceUri('js/jquery.min.js') }" crossorigin="anonymous"></script>
         <script src="${ opts.getResourceUri('js/bootstrap.bundle.min.js') }" crossorigin="anonymous"></script>
 

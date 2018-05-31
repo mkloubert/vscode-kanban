@@ -65,9 +65,12 @@ export interface BoardCard {
      */
     creation_time?: string;
     /**
-     * The (optional) description.
+     * The (optional) description (data).
      */
-    description?: string;
+    description?: string | {
+        content?: string;
+        mime?: string;
+    };
     /**
      * The priority.
      */

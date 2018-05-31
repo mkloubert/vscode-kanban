@@ -18,26 +18,33 @@ function vsckb_get_assigned_to_val(field) {
     return assignedTo;
 }
 
-function vsckb_get_cards_sorted(type) {
-    return allCards[type].sort((x, y) => {
-        // first compare by prio (DESC)
-        const COMP_0 = vsckb_get_card_prio_sort_val( y ) - 
-                       vsckb_get_card_prio_sort_val( x );
-        if (0 !== COMP_0) {
-            return COMP_0;
+function vsckb_get_card_description(item) {
+    let desc = item.description;
+
+    if (!vsckb_is_nil(desc)) {
+        if ('object' !== typeof desc) {
+            desc = {
+                content: desc
+            };
         }
 
-        // then by type
-        const COMP_1 = vsckb_get_card_type_sort_val( x ) - 
-                       vsckb_get_card_type_sort_val( y );
-        if (0 !== COMP_1) {
-            return COMP_1;
+        desc = vsckb_clone(desc);
+
+        let mime = vsckb_normalize_str(desc.mime);
+        switch (mime) {
+            case 'text/markdown':
+                break;
+                
+            default:
+                mime = 'text/plain';
+                break;
         }
 
-        // then by title
-        return vsckb_get_sort_val( vsckb_normalize_str(x.title), 
-                                   vsckb_normalize_str(y.title) );
-    });
+        desc.content = vsckb_to_string(desc.content);
+        desc.mime = mime;
+    }
+
+    return desc;
 }
 
 function vsckb_get_card_prio_sort_val(item) {
@@ -62,6 +69,28 @@ function vsckb_get_card_type_sort_val(item) {
     }
 
     return 0;
+}
+
+function vsckb_get_cards_sorted(type) {
+    return allCards[type].sort((x, y) => {
+        // first compare by prio (DESC)
+        const COMP_0 = vsckb_get_card_prio_sort_val( y ) - 
+                       vsckb_get_card_prio_sort_val( x );
+        if (0 !== COMP_0) {
+            return COMP_0;
+        }
+
+        // then by type
+        const COMP_1 = vsckb_get_card_type_sort_val( x ) - 
+                       vsckb_get_card_type_sort_val( y );
+        if (0 !== COMP_1) {
+            return COMP_1;
+        }
+
+        // then by title
+        return vsckb_get_sort_val( vsckb_normalize_str(x.title), 
+                                   vsckb_normalize_str(y.title) );
+    });
 }
 
 function vsckb_get_prio_val(field) {
@@ -148,6 +177,8 @@ function vsckb_refresh_card_view(onAdded) {
         CARD_BODY.html('');
 
         vsckb_get_cards_sorted(TYPE).forEach((i) => {
+            let itemSetup = false;
+
             const ID = ++nextKanbanCardId;
             const UNIQUE_ID = `${ ID }-${ Math.floor(Math.random() * 597923979) }-${ (new Date()).getTime() }`;
 
@@ -167,7 +198,9 @@ function vsckb_refresh_card_view(onAdded) {
             NEW_ITEM.attr('vsckb-uid', UNIQUE_ID);
 
             const NEW_ITEM_HEADER = NEW_ITEM.find('.card-header');
+
             const NEW_ITEM_BODY = NEW_ITEM.find('.card-body');
+            NEW_ITEM_BODY.hide();
 
             const NEW_ITEM_BUTTONS = NEW_ITEM_HEADER.find('.vsckb-buttons');
 
@@ -246,7 +279,14 @@ function vsckb_refresh_card_view(onAdded) {
                     TITLE_FIELD.val( vsckb_to_string(i.title) );
 
                     const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
-                    DESCRIPTION_FIELD.val( vsckb_to_string(i.description) );
+                    {
+                        const DESC = vsckb_get_card_description(i);
+                        if (DESC) {
+                            DESCRIPTION_FIELD.val(vsckb_to_string(
+                                DESC.content
+                            ));
+                        }
+                    }
 
                     const TYPE_FIELD = WIN.find('#vsckb-edit-card-type');
                     TYPE_FIELD.val( vsckb_normalize_str(i.type) );
@@ -281,6 +321,11 @@ function vsckb_refresh_card_view(onAdded) {
                         ).trim();
                         if ('' === description) {
                             description = undefined;
+                        } else {
+                            description = {
+                                content: description,
+                                mime: 'text/markdown'
+                            };
                         }
 
                         let type = vsckb_normalize_str( TYPE_FIELD.val() );
@@ -328,16 +373,40 @@ function vsckb_refresh_card_view(onAdded) {
             NEW_ITEM_HEADER.find('.vsckb-title')
                            .text( vsckb_to_string(i.title).trim() );
 
-            const DESC = vsckb_to_string(i.description).trim();
-            if ('' === DESC) {
-                NEW_ITEM_BODY.hide();
-            } else {
-                const HTML = vsckb_to_string(
-                    jQuery('<span />').text(DESC)
-                                      .html()
-                ).trim();
+            const DESC = vsckb_get_card_description(i);
+            if (!vsckb_is_nil(DESC)) {
+                const DESC_CONTENT = vsckb_to_string(DESC.content).trim();
+                if ('' !== DESC_CONTENT) {
+                    let html;
 
-                NEW_ITEM_BODY.html( HTML.split('\n').join('<br />') );
+                    switch (vsckb_normalize_str(DESC.mime)) {
+                        case 'text/markdown':
+                            html = vsckb_from_markdown(
+                                DESC_CONTENT
+                            );
+                            break;
+
+                        default:
+                            html = vsckb_to_string(
+                                jQuery('<span />').text(DESC_CONTENT)
+                                                  .html()
+                            ).trim()
+                             .split('\n').join('<br />');
+                            break;
+                    }
+
+                    if (false !== html) {
+                        NEW_ITEM_BODY.append(
+                            html
+                        ).show();
+
+                        itemSetup = () => {
+                            vsckb_apply_highlight(
+                                NEW_ITEM_BODY
+                            );
+                        };
+                    }
+                }
             }
 
             let newItemHeaderBgColor = 'bg-info';
@@ -375,6 +444,10 @@ function vsckb_refresh_card_view(onAdded) {
             NEW_ITEM.appendTo(CARD_BODY);
 
             vsckb_update_card_item_footer(NEW_ITEM, i);
+
+            if (false !== itemSetup) {
+                itemSetup();
+            }
 
             if (onAdded) {
                 onAdded({

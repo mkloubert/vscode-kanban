@@ -1,4 +1,61 @@
 
+function vsckb_apply_highlight(selector) {
+    selector.find('pre code').each(function(i, block) {
+        hljs.highlightBlock(block);
+    });
+}
+
+function vsckb_clone(val) {
+    if (val) {
+        val = JSON.parse(
+            JSON.stringify(val)
+        );
+    }
+
+    return val;
+}
+
+function vsckb_from_markdown(md) {
+    const CONVERTER = new showdown.Converter();
+
+    const HTML = CONVERTER.makeHtml( vsckb_to_string(md) );
+
+    const CONTENT = jQuery('<div class="vsckb-markdown" />');
+    CONTENT.html( HTML );
+
+    CONTENT.find('script')
+           .remove();
+
+    CONTENT.find('table')
+           .addClass('table')
+           .addClass('table-striped')
+           .addClass('table-hover');
+
+    CONTENT.find('img')
+           .addClass('img-fluid');
+
+    // dynamic links do not work in webviews
+    CONTENT.find('a').each(function() {
+        const A = jQuery(this);
+
+        let text = vsckb_to_string( A.text() );
+        let href = vsckb_to_string( A.attr('href') );
+
+        if ('' === text.trim()) {
+            text = href;
+        }
+
+        const NEW_A = jQuery('<span />').text(text)
+                                        .attr('title', href);
+
+        A.replaceWith(
+            NEW_A
+        );
+    });
+
+    return CONTENT;
+}
+
 function vsckb_get_sort_val(x, y) {
     if (x !== y) {
         if (x > y) {
@@ -117,6 +174,22 @@ function vsckb_to_string(val) {
 
     return '' + val;
 }
+
+jQuery(() => {
+    showdown.setFlavor('github');
+
+    showdown.setOption('completeHTMLDocument', false);
+    showdown.setOption('encodeEmails', true);
+    showdown.setOption('ghCodeBlocks', true);
+    showdown.setOption('ghCompatibleHeaderId', true);
+    showdown.setOption('headerLevelStart', 3);
+    showdown.setOption('openLinksInNewWindow', true);
+    showdown.setOption('simpleLineBreaks', true);
+    showdown.setOption('simplifiedAutoLink', true);
+    showdown.setOption('strikethrough', true);
+    showdown.setOption('tables', true);
+    showdown.setOption('tasklists', true);
+});
 
 jQuery(() => {
     jQuery('.vsckb-btn-with-known-url').on('click', function() {
