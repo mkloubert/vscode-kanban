@@ -936,7 +936,7 @@ jQuery(() => {
 
                 case 'webviewIsVisible':
                     {
-                        vsckb_update_card_creation_times();
+                        vsckb_refresh_card_view();
                     }
                     break;
             }

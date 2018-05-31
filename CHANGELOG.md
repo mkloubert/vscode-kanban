@@ -5,6 +5,7 @@
 ## 1.5.0 (May 31st, 2018; markdown support)
 
 * added [Markdown support](https://github.com/mkloubert/vscode-kanbanmarkdown-support-) for card descriptions
+* bugfixes
 
 ## 1.4.0 (May 31st, 2018; access modules of extension from scripts)
 
