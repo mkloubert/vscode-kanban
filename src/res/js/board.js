@@ -5,6 +5,33 @@ let nextKanbanCardId;
 let vsckb_update_card_interval = false;
 let vsckb_is_updating_card_creation_times = false;
 
+function vsckb_foreach_card(action, cards) {
+    if (arguments.length < 2) {
+        cards = allCards;
+    }
+
+    if (cards) {
+        let i = -1;
+        let ti = -1;
+
+        for (const TYPE in cards) {
+            ++ti;
+
+            const CARD_LIST = cards[TYPE];
+
+            if (CARD_LIST) {
+                CARD_LIST.forEach((c) => {
+                    ++i;
+
+                    if (action) {
+                        action(c, i, TYPE, ti);
+                    }
+                });
+            }
+        }
+    }
+}
+
 function vsckb_get_assigned_to_val(field) {
     let assignedTo = vsckb_to_string( field.val() ).trim();
     if ('' === assignedTo) {
@@ -110,15 +137,6 @@ function vsckb_get_prio_val(field) {
                        : prio;
 }
 
-function vsckb_get_uid_of_card(card) {
-    let uid = vsckb_to_string(card.attr('vsckb-uid')).trim();
-    if ('' === uid) {
-        uid = undefined;
-    }
-
-    return uid;
-}
-
 function vsckb_get_user_list() {
     const USERS = [];
     const ADD_UNIQUE = (name) => {
@@ -180,7 +198,6 @@ function vsckb_refresh_card_view(onAdded) {
             let itemSetup = false;
 
             const ID = ++nextKanbanCardId;
-            const UNIQUE_ID = `${ ID }-${ Math.floor(Math.random() * 597923979) }-${ (new Date()).getTime() }`;
 
             const CARD_TYPE = TYPE;
             const CARD_LIST = allCards[CARD_TYPE];
@@ -195,7 +212,6 @@ function vsckb_refresh_card_view(onAdded) {
                                     '<div class="vsckb-buttons float-right" />' + 
                                     '</div>'  +
                                     '</div>');
-            NEW_ITEM.attr('vsckb-uid', UNIQUE_ID);
 
             const NEW_ITEM_TYPE = NEW_ITEM.find('.vsckb-kanban-card-type');
 
@@ -326,8 +342,7 @@ function vsckb_refresh_card_view(onAdded) {
                             vsckb_raise_event('card_updated', {
                                 card: i,
                                 column: CARD_TYPE,
-                                oldCard: oldCard,
-                                uid: vsckb_get_uid_of_card(NEW_ITEM)
+                                oldCard: oldCard
                             });
                         });
             
@@ -365,8 +380,7 @@ function vsckb_refresh_card_view(onAdded) {
 
                             vsckb_raise_event('card_deleted', {
                                 card: i,
-                                column: CARD_TYPE,
-                                uid: vsckb_get_uid_of_card(NEW_ITEM)
+                                column: CARD_TYPE
                             });
                         });
                         
@@ -479,8 +493,16 @@ function vsckb_remove_item(item) {
 }
 
 function vsckb_save_board() {
+    const ALL_CARDS = vsckb_clone(
+        allCards
+    );
+
+    vsckb_foreach_card((card) => {
+        delete card['__uid'];
+    }, ALL_CARDS);
+
     vsckb_post('saveBoard',
-               allCards);
+               ALL_CARDS);
 }
 
 function vsckb_setup_assigned_to(field, user) {
@@ -563,8 +585,7 @@ function vsckb_update_card_item_footer(item, entry) {
             vsckb_raise_event('card_moved', {
                 card: ctx.item,
                 from: CARD_TYPE,
-                to: target,
-                uid: vsckb_get_uid_of_card(ctx.element)
+                to: target
             });
         });        
     };
@@ -879,8 +900,7 @@ jQuery(() => {
 
                 vsckb_raise_event('card_created', {
                     card: ctx.item,
-                    column: TYPE,
-                    uid: vsckb_get_uid_of_card(ctx.element)
+                    column: TYPE
                 });
             });
 
@@ -908,7 +928,34 @@ jQuery(() => {
                     {
                         allCards = MSG.data;
 
+                        vsckb_foreach_card((card, i) => {
+                            card['__uid'] = `${ i }-${ Math.floor(Math.random() * 597923979) }-${ (new Date()).getTime() }`;
+                        }, MSG.data);
+
                         vsckb_refresh_card_view();
+                    }
+                    break;
+
+                case 'setCardTag':
+                    {
+                        let saveBoard = false;
+
+                        const TAG_DATA = MSG.data;
+                        if (TAG_DATA) {
+                            const UID = vsckb_to_string(TAG_DATA.uid).trim();
+
+                            vsckb_foreach_card((card) => {
+                                if (card['__uid'] === UID) {
+                                    card.tag = TAG_DATA.tag;
+
+                                    saveBoard = true;
+                                }
+                            });
+                        }
+
+                        if (saveBoard) {
+                            vsckb_save_board();
+                        }
                     }
                     break;
 

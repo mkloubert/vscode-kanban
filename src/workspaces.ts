@@ -24,6 +24,21 @@ import * as vscode from 'vscode';
 import * as vscode_helpers from 'vscode-helpers';
 
 /**
+ * Arguments for an event script function, which also can set
+ * thet 'tag' property of the underlying card.
+ */
+export interface CanSetCardTag {
+    /**
+     * Sets value for the 'tag' property of the underlying card.
+     *
+     * @param {any} tag The data to set.
+     *
+     * @return {PromiseLike<boolean>} The promise that indicates if operation was successful or not.
+     */
+    setTag: (tag: any) => PromiseLike<boolean>;
+}
+
+/**
  * Configuration data for the extension.
  */
 export interface Config extends vscode.WorkspaceConfiguration {
@@ -48,23 +63,23 @@ export interface EventScriptModule {
     /**
      * Is raised after a card has been created.
      */
-    onCardCreated?: EventScriptFunction<vsckb_boards.CardCreatedEventData>;
+    onCardCreated?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag>;
     /**
      * Is raised after a card has been deleted.
      */
-    onCardDeleted?: EventScriptFunction<vsckb_boards.CardDeletedEventData>;
+    onCardDeleted?: EventScriptFunction<EventScriptFunctionArguments & HasTag>;
     /**
      * Is raised after a card has been moved.
      */
-    onCardMoved?: EventScriptFunction<vsckb_boards.CardMovedEventData>;
+    onCardMoved?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag>;
     /**
      * Is raised after a card has been updated.
      */
-    onCardUpdated?: EventScriptFunction<vsckb_boards.CardUpdatedEventData>;
+    onCardUpdated?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag>;
     /**
      * Is raised after a column has been cleared.
      */
-    onColumnCleared?: EventScriptFunction<vsckb_boards.ColumnClearedEventData>;
+    onColumnCleared?: EventScriptFunction;
     /**
      * Generic fallback.
      */
@@ -76,16 +91,16 @@ export interface EventScriptModule {
  *
  * @param {EventScriptFunctionArguments<TData>} args The arguments for the event.
  */
-export type EventScriptFunction<TData = any> = (args: EventScriptFunctionArguments<TData>) => any;
+export type EventScriptFunction<TArgs extends EventScriptFunctionArguments = EventScriptFunctionArguments> = (args: TArgs) => any;
 
 /**
  * Arguments for an event script function.
  */
-export interface EventScriptFunctionArguments<TData = any> {
+export interface EventScriptFunctionArguments {
     /**
      * The event data.
      */
-    data: TData;
+    data: any;
     /**
      * The path of the underlying board file.
      */
@@ -98,6 +113,16 @@ export interface EventScriptFunctionArguments<TData = any> {
      * An extended 'require()' function, which can also access the modules of that extension.
      */
     require: (id: string) => any;
+}
+
+/**
+ * An object that contains a 'tag' property.
+ */
+export interface HasTag {
+    /**
+     * The 'tag' data.
+     */
+    readonly tag: any;
 }
 
 const BOARD_FILENAME = 'vscode-kanban.json';
@@ -287,26 +312,84 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                 }
             };
 
+            let setupUID = false;
+            let setupSetTag = false;
+            let setupTag = false;
+
             switch (context.name) {
                 case 'card_created':
                     scriptFunc = SCRIPT_MODULE.onCardCreated;
+                    setupUID = true;
+                    setupSetTag = true;
+                    setupTag = true;
                     break;
 
                 case 'card_deleted':
                     scriptFunc = SCRIPT_MODULE.onCardDeleted;
+                    setupUID = true;
+                    setupTag = true;
                     break;
 
                 case 'card_moved':
                     scriptFunc = SCRIPT_MODULE.onCardMoved;
+                    setupUID = true;
+                    setupSetTag = true;
+                    setupTag = true;
                     break;
 
                 case 'card_updated':
                     scriptFunc = SCRIPT_MODULE.onCardUpdated;
+                    setupUID = true;
+                    setupSetTag = true;
+                    setupTag = true;
                     break;
 
                 case 'column_cleared':
                     scriptFunc = SCRIPT_MODULE.onColumnCleared;
                     break;
+            }
+
+            if (setupTag) {
+                // ARGS.tag
+                Object.defineProperty(ARGS, 'tag', {
+                    get: function () {
+                        return this.data.card.tag;
+                    }
+                });
+            }
+
+            if (setupUID) {
+                // ARGS.uid
+                Object.defineProperty(ARGS, 'uid', {
+                    get: function () {
+                        return this.data.card.__uid;
+                    }
+                });
+            }
+
+            if (setupSetTag) {
+                // ARGS.setTag()
+                ARGS['setTag'] = async function(tag: any) {
+                    const UID: string = this.uid;
+
+                    let result: boolean;
+                    try {
+                        result = await context.postMessage(
+                            'setCardTag', {
+                                tag: tag,
+                                uid: UID,
+                            }
+                        );
+                    } catch {
+                        result = false;
+                    }
+
+                    if (result) {
+                        this.data.card.tag = tag;
+                    }
+
+                    return result;
+                };
             }
 
             if (!scriptFunc) {

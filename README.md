@@ -107,6 +107,14 @@ exports.onCardCreated = async (args) => {
     // access a module of that extension
     // s. https://github.com/mkloubert/vscode-kanban/blob/master/package.json
     const FSExtra = args.require('fs-extra');
+
+    // write own data to
+    // 'tag' property of a card (args.tag)
+    // 
+    // also works in:
+    // - onCardMoved()
+    // - onCardUpdated()
+    await args.setTag( 'Any JSON serializable data.' );    
 };
 
 // [OPTIONAL]

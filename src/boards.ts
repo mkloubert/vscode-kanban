@@ -76,6 +76,10 @@ export interface BoardCard {
      */
     prio?: number;
     /**
+     * User defined data from scripts, e.g.
+     */
+    tag?: any;
+    /**
      * The title.
      */
     title: string;
@@ -170,7 +174,7 @@ export interface EventDataWithUniqueId {
     /**
      * The unique ID.
      */
-    uid: string;
+    readonly uid: string;
 }
 
 /**
@@ -190,6 +194,15 @@ export interface EventListenerContext {
      * The name of the event.
      */
     name: string;
+    /**
+     * Post a message / command (to the underlying webview).
+     *
+     * @param {string} command The name of the command.
+     * @param {any} [data] The data for the command.
+     *
+     * @return {PromiseLike<boolean>} The promise that indicates if operation was successful or not.
+     */
+    postMessage(command: string, data?: any): PromiseLike<boolean>;
 }
 
 /**
@@ -830,6 +843,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         const CTX: EventListenerContext = {
             data: data,
             name: vscode_helpers.normalizeString(name),
+            postMessage: async (cmd, d?) => {
+                return this.postMessage(
+                    vscode_helpers.toStringSafe(cmd), d
+                );
+            }
         };
 
         await Promise.resolve(
