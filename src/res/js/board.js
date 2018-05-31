@@ -185,75 +185,45 @@ function vsckb_refresh_card_view(onAdded) {
             const CARD_TYPE = TYPE;
             const CARD_LIST = allCards[CARD_TYPE];
 
-            const NEW_ITEM = jQuery('<div class="card vsckb-kanban-card border border-dark">' +
-                                    '<div class="card-header font-weight-bold">' + 
-                                    '<span class="vsckb-title" />' + 
+            const NEW_ITEM = jQuery('<div class="vsckb-kanban-card border border-dark">' +
+                                    '<div class="vsckb-kanban-card-col vsckb-kanban-card-type font-weight-bold" />' + 
+                                    '<div class="vsckb-kanban-card-info bg-white text-dark">'  +
+                                    '<div class="vsckb-kanban-card-title font-weight-bold" />'  +
+                                    '<div class="vsckb-kanban-card-body" />'  +
+                                    '</div>'  +
+                                    '<div class="vsckb-kanban-card-footer text-dark">' +
                                     '<div class="vsckb-buttons float-right" />' + 
-                                    '</div>' + 
-                                    '<div class="card-body text-dark" />' + 
-                                    '<div class="card-footer text-dark">' + 
-                                    '<div class="vsckb-buttons float-right" />' + 
-                                    '</div>' + 
+                                    '</div>'  +
                                     '</div>');
             NEW_ITEM.attr('vsckb-uid', UNIQUE_ID);
 
-            const NEW_ITEM_HEADER = NEW_ITEM.find('.card-header');
+            const NEW_ITEM_TYPE = NEW_ITEM.find('.vsckb-kanban-card-type');
 
-            const NEW_ITEM_BODY = NEW_ITEM.find('.card-body');
-            NEW_ITEM_BODY.hide();
+            const NEW_ITEM_INFO = NEW_ITEM.find('.vsckb-kanban-card-info');
+            const NEW_ITEM_INFO_BODY = NEW_ITEM_INFO.find('.vsckb-kanban-card-body');
 
-            const NEW_ITEM_BUTTONS = NEW_ITEM_HEADER.find('.vsckb-buttons');
+            NEW_ITEM.find('.vsckb-kanban-card-info');
 
-            // delete button
+            let newItemTypeBgColor = 'bg-info';
+            let newItemTypeTextColor = 'text-white';
             {
-                const DELETE_BTN = jQuery('<a class="btn btn-sm" title="Delete Card">' + 
-                                          '<i class="fa fa-trash" aria-hidden="true"></i>' + 
-                                          '</a>');
+                switch (vsckb_normalize_str(i.type)) {
+                    case 'bug':
+                        newItemTypeBgColor = 'bg-dark';
+                        break;
+    
+                    case 'emergency':
+                        newItemTypeBgColor = 'bg-danger';
+                        break;
+    
+                    default:
+                        newItemTypeTextColor = 'text-dark';
+                        break;
+                }
 
-                DELETE_BTN.on('click', function() {
-                    const WIN = jQuery('#vsckb-delete-card-modal');
-
-                    WIN.find('.modal-footer .vsckb-no-btn').off('click').on('click', function() {
-                        WIN.modal('hide');
-                    });
-
-                    WIN.find('.modal-footer .vsckb-yes-btn').off('click').on('click', function() {
-                        vsckb_remove_item(i);
-                        
-                        vsckb_save_board();
-
-                        vsckb_refresh_card_view((ctx) => {
-                            if (ctx.item !== i) {
-                                return;
-                            }
-
-                            vsckb_raise_event('card_deleted', {
-                                card: i,
-                                column: CARD_TYPE,
-                                uid: vsckb_get_uid_of_card(NEW_ITEM)
-                            });
-                        });
-                        
-                        WIN.modal('hide');
-                    });
-
-                    const CONFIRM_MSG = jQuery(`<span>Are you sure to delete <strong class="vsckb-title" /> card of <strong class="vsckb-type" />?</span>`);
-
-                    CONFIRM_MSG.find('.vsckb-title').text(
-                        i.title
-                    );
-                    CONFIRM_MSG.find('.vsckb-type').text(
-                        jQuery(`#vsckb-card-${ CARD_TYPE } .vsckb-primary-card-header span.vsckb-title`).text()
-                    );
-
-                    WIN.find('.modal-body')
-                       .html('')
-                       .append( CONFIRM_MSG );
-
-                    WIN.modal('show');
-                });
-
-                DELETE_BTN.appendTo( NEW_ITEM_BUTTONS );
+                NEW_ITEM.find('.vsckb-kanban-card-type')
+                        .addClass( newItemTypeBgColor )
+                        .addClass( newItemTypeTextColor );
             }
 
             // edit button
@@ -318,8 +288,8 @@ function vsckb_refresh_card_view(onAdded) {
                         
                         let description = vsckb_to_string(
                             DESCRIPTION_FIELD.val()
-                        ).trim();
-                        if ('' === description) {
+                        );
+                        if ('' === description.trim()) {
                             description = undefined;
                         } else {
                             description = {
@@ -367,11 +337,63 @@ function vsckb_refresh_card_view(onAdded) {
                     WIN.modal('show');
                 });
 
-                EDIT_BTN.appendTo( NEW_ITEM_BUTTONS );
+                EDIT_BTN.appendTo( NEW_ITEM_TYPE );
             }
 
-            NEW_ITEM_HEADER.find('.vsckb-title')
-                           .text( vsckb_to_string(i.title).trim() );
+            // delete button
+            {
+                const DELETE_BTN = jQuery('<a class="btn btn-sm" title="Delete Card">' + 
+                                          '<i class="fa fa-trash" aria-hidden="true"></i>' + 
+                                          '</a>');
+
+                DELETE_BTN.on('click', function() {
+                    const WIN = jQuery('#vsckb-delete-card-modal');
+
+                    WIN.find('.modal-footer .vsckb-no-btn').off('click').on('click', function() {
+                        WIN.modal('hide');
+                    });
+
+                    WIN.find('.modal-footer .vsckb-yes-btn').off('click').on('click', function() {
+                        vsckb_remove_item(i);
+                        
+                        vsckb_save_board();
+
+                        vsckb_refresh_card_view((ctx) => {
+                            if (ctx.item !== i) {
+                                return;
+                            }
+
+                            vsckb_raise_event('card_deleted', {
+                                card: i,
+                                column: CARD_TYPE,
+                                uid: vsckb_get_uid_of_card(NEW_ITEM)
+                            });
+                        });
+                        
+                        WIN.modal('hide');
+                    });
+
+                    const CONFIRM_MSG = jQuery(`<span>Are you sure to delete <strong class="vsckb-title" /> card of <strong class="vsckb-type" />?</span>`);
+
+                    CONFIRM_MSG.find('.vsckb-title').text(
+                        i.title
+                    );
+                    CONFIRM_MSG.find('.vsckb-type').text(
+                        jQuery(`#vsckb-card-${ CARD_TYPE } .vsckb-primary-card-header span.vsckb-title`).text()
+                    );
+
+                    WIN.find('.modal-body')
+                       .html('')
+                       .append( CONFIRM_MSG );
+
+                    WIN.modal('show');
+                });
+
+                DELETE_BTN.appendTo( NEW_ITEM_TYPE );
+            }
+
+            NEW_ITEM_INFO.find('.vsckb-kanban-card-title')
+                         .text( vsckb_to_string(i.title).trim() );
 
             const DESC = vsckb_get_card_description(i);
             if (!vsckb_is_nil(DESC)) {
@@ -396,38 +418,18 @@ function vsckb_refresh_card_view(onAdded) {
                     }
 
                     if (false !== html) {
-                        NEW_ITEM_BODY.append(
+                        NEW_ITEM_INFO_BODY.append(
                             html
                         ).show();
 
                         itemSetup = () => {
                             vsckb_apply_highlight(
-                                NEW_ITEM_BODY
+                                NEW_ITEM_INFO_BODY
                             );
                         };
                     }
                 }
             }
-
-            let newItemHeaderBgColor = 'bg-info';
-            let newItemHeaderTextColor = 'text-white';
-            switch (vsckb_normalize_str(i.type)) {
-                case 'bug':
-                    newItemHeaderBgColor = 'bg-dark';
-                    break;
-
-                case 'emergency':
-                    newItemHeaderBgColor = 'bg-danger';
-                    break;
-
-                default:
-                    newItemHeaderTextColor = 'text-dark';
-                    break;
-            }
-
-            NEW_ITEM.find('.card-header')
-                    .addClass(newItemHeaderBgColor)
-                    .addClass(newItemHeaderTextColor);
 
             const UPDATE_BORDER = (borderClass, borderWidth) => {
                 NEW_ITEM.removeClass('border-dark')
@@ -506,7 +508,7 @@ function vsckb_update_card_creation_times() {
 
     vsckb_is_updating_card_creation_times = true;
     try {
-        jQuery('.vsckb-kanban-card .card-footer .vsckb-creation-time').each(function() {
+        jQuery('.vsckb-kanban-card .vsckb-kanban-card-footer .vsckb-creation-time').each(function() {
             try {
                 const CREATION_TIME = jQuery(this);
                 CREATION_TIME.hide();
@@ -541,7 +543,7 @@ function vsckb_update_card_item_footer(item, entry) {
 
     const CARD_LIST = allCards[CARD_TYPE];
 
-    const ITEM_FOOTER = item.find('.card-footer');
+    const ITEM_FOOTER = item.find('.vsckb-kanban-card-footer');
     const ITEM_FOOTER_BUTTONS = ITEM_FOOTER.find('.vsckb-buttons');
 
     ITEM_FOOTER.hide();
@@ -842,9 +844,14 @@ jQuery(() => {
             
             let description = vsckb_to_string(
                 DESCRIPTION_FIELD.val()
-            ).trim();
-            if ('' === description) {
+            );
+            if ('' === description.trim()) {
                 description = undefined;
+            } else {
+                description = {
+                    content: description,
+                    mime: 'text/markdown'
+                };
             }
 
             let type = vsckb_normalize_str( TYPE_FIELD.val() );
@@ -952,7 +959,7 @@ jQuery(() => {
 
         const SELECT = LIST.find('select');
 
-        SELECT.append('<option value="bug">Bug</option>')
+        SELECT.append('<option value="bug">Bug / issue</option>')
               .append('<option value="emergency">Emergency</option>')
               .append('<option value="" selected>Note</option>');
     });

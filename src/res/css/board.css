@@ -9,14 +9,6 @@
     max-width: 67% !important;
 }
 
-body main .row .col .vsckb-card .vsckb-kanban-card .vsckb-no-description {
-    font-style: italic;
-}
-
-body main .row .col .vsckb-card .vsckb-kanban-card {
-    margin-bottom: 8px;
-}
-
 body main .row .col .vsckb-card {
     height: 100%;
 }
@@ -26,34 +18,54 @@ body main .row .col .vsckb-card .card-body {
     overflow: auto;
 }
 
-.vsckb-kanban-card .card-header {
-    margin-right: 0;
-    padding-right: 8px;
-}
-
-.vsckb-kanban-card .card-header .vsckb-buttons .btn,
-.vsckb-kanban-card .card-footer .vsckb-buttons .btn {
-    margin: 0;
-}
-
-.vsckb-kanban-card .card-footer {
-    padding: 0;
-}
-
-.vsckb-kanban-card .card-footer .vsckb-buttons .btn {
-    margin: 0;
-}
-
-.vsckb-kanban-card .card-body {
-    max-height: 192px;
-    overflow-x: none;
-    overflow-y: auto;
-    word-wrap: break-word;
-}
-
-.vsckb-kanban-card .card-footer .vsckb-creation-time {
+.vsckb-kanban-card .vsckb-kanban-card-footer .vsckb-creation-time {
     font-size: 0.75em;
     position: relative;
     left: 8px;
     top: 6px;
+}
+
+.vsckb-kanban-card {
+    clear: both;
+    display: table;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.vsckb-kanban-card .vsckb-kanban-card-col {
+    display: table-cell;
+}
+
+.vsckb-kanban-card .vsckb-kanban-card-type {
+    overflow: hidden;
+    padding: 0;
+    width: 16px;
+}
+
+.vsckb-kanban-card .vsckb-kanban-card-type .btn {
+    clear: both;
+    display: block;
+    font-size: 0.75em;
+    margin: 0;
+    text-align: center;
+}
+
+.vsckb-kanban-card .vsckb-kanban-card-info {
+    min-height: 96px;
+    max-height: 192px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 2px 8px;
+    word-wrap: break-word;
+}
+
+.vsckb-kanban-card .vsckb-kanban-card-info .vsckb-kanban-card-title {
+    clear: both;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.vsckb-kanban-card .vsckb-kanban-card-footer {
+    clear: both;
+    display: block;
 }
