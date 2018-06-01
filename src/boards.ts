@@ -571,6 +571,13 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 </div>
 `;
             },
+            getHeaderButtons: () => {
+                return `
+<a class="btn btn-primary btn-sm text-white" id="vsckb-reload-board-btn" title="Reload Board">
+    <i class="fa fa-refresh" aria-hidden="true"></i>
+</a>
+`;
+            },
             getResourceUri: GET_RES_URI,
             name: 'board',
         });
@@ -591,18 +598,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
             return;
         }
 
-        let loadedBoard: Board = JSON.parse(
-            await FSExtra.readFile(
-                FILE.fsPath, 'utf8'
-            )
-        );
-
-        if (_.isNil(loadedBoard)) {
-            loadedBoard = newBoard();
-        }
-
-        await this.postMessage('setBoard',
-                               loadedBoard);
+        await this.reloadBoard();
 
         await this.postMessage('setTitleAndFilePath', {
             file: Path.resolve(this.file.fsPath),
@@ -753,6 +749,12 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                             }
                             break;
 
+                        case 'reloadBoard':
+                            action = async () => {
+                                await this.reloadBoard();
+                            };
+                            break;
+
                         case 'saveBoard':
                             action = async () => {
                                 const BOARD_TO_SAVE: Board = msg.data;
@@ -786,7 +788,9 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
             newPanel.onDidChangeViewState((e) => {
                 try {
                     if (e.webviewPanel.visible) {
-                        this.postMessage('webviewIsVisible').then(() => {
+                        (async () => {
+                            await this.postMessage('webviewIsVisible');
+                        })().then(() => {
                         }, () => {
                         });
                     }
@@ -853,6 +857,26 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         await Promise.resolve(
             LISTENER( CTX )
         );
+    }
+
+    private async reloadBoard() {
+        const FILE = this.file;
+        if (!FILE) {
+            return;
+        }
+
+        let loadedBoard: Board = JSON.parse(
+            await FSExtra.readFile(
+                FILE.fsPath, 'utf8'
+            )
+        );
+
+        if (_.isNil(loadedBoard)) {
+            loadedBoard = newBoard();
+        }
+
+        await this.postMessage('setBoard',
+                               loadedBoard);
     }
 
     /**

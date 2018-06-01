@@ -45,6 +45,15 @@ function vsckb_get_assigned_to_val(field) {
     return assignedTo;
 }
 
+function vsckb_get_card_count() {
+    let count = 0;
+    vsckb_foreach_card(() => {
+        ++count;
+    });
+
+    return count;
+}
+
 function vsckb_get_card_description(item) {
     let desc = item.description;
 
@@ -517,6 +526,12 @@ function vsckb_refresh_card_view(onAdded) {
     vsckb_update_card_interval = setInterval(() => {
         vsckb_update_card_creation_times();
     }, 20000);
+}
+
+function vsckb_reload_board() {
+    vsckb_post(
+        'reloadBoard'
+    );
 }
 
 function vsckb_remove_item(item) {
@@ -1027,7 +1042,12 @@ jQuery(() => {
 
                 case 'webviewIsVisible':
                     {
-                        vsckb_refresh_card_view();
+                        const CARD_COUNT = vsckb_get_card_count();
+                        if (CARD_COUNT < 1) {
+                            vsckb_reload_board();
+                        } else {
+                            vsckb_refresh_card_view();
+                        }
                     }
                     break;
             }
@@ -1057,6 +1077,12 @@ jQuery(() => {
         const LOADER = jQuery('<img class="vsckb-ajax-loader" />');
         LOADER.attr('src', VSCKB_AJAX_LOADER_16x11);
         LOADER.appendTo( CARD_BODY );
+    });
+});
+
+jQuery(() => {
+    jQuery('#vsckb-reload-board-btn').on('click', function() {
+        vsckb_reload_board();
     });
 });
 

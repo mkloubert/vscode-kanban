@@ -83,3 +83,7 @@ body main .row .col .vsckb-card .card-body {
     clear: both;
     display: block;
 }
+
+#vsckb-reload-board-btn {
+    margin-right: 16px;
+}

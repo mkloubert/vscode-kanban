@@ -8,6 +8,10 @@
 
 ![Demo 2](https://raw.githubusercontent.com/mkloubert/vscode-kanban/master/img/demo2.gif)
 
+* added reload button and fixed bug when bringing board to foreground, s. [issue #4](https://github.com/mkloubert/vscode-kanban/issues/4):
+
+![Screenshot 1](https://raw.githubusercontent.com/mkloubert/vscode-kanban/master/img/screenshot1.png)
+
 * improved card design
 
 ## 1.7.0 (June 1st, 2018; custom card data)
