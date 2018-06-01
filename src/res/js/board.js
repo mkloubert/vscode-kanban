@@ -206,6 +206,7 @@ function vsckb_refresh_card_view(onAdded) {
                                     '<div class="vsckb-kanban-card-col vsckb-kanban-card-type font-weight-bold" />' + 
                                     '<div class="vsckb-kanban-card-info bg-white text-dark">'  +
                                     '<div class="vsckb-kanban-card-title font-weight-bold" />'  +
+                                    '<div class="vsckb-kanban-card-progress" />' + 
                                     '<div class="vsckb-kanban-card-body" />'  +
                                     '</div>'  +
                                     '<div class="vsckb-kanban-card-footer text-dark">' +
@@ -217,6 +218,9 @@ function vsckb_refresh_card_view(onAdded) {
 
             const NEW_ITEM_INFO = NEW_ITEM.find('.vsckb-kanban-card-info');
             const NEW_ITEM_INFO_BODY = NEW_ITEM_INFO.find('.vsckb-kanban-card-body');
+
+            const NEW_ITEM_PROGRESS = NEW_ITEM.find('.vsckb-kanban-card-progress');
+            NEW_ITEM_PROGRESS.hide();
 
             NEW_ITEM.find('.vsckb-kanban-card-info');
 
@@ -440,6 +444,39 @@ function vsckb_refresh_card_view(onAdded) {
                             vsckb_apply_highlight(
                                 NEW_ITEM_INFO_BODY
                             );
+
+                            // task items
+                            const ALL_TASK_ITEMS = jQuery('ul.vsckb-task-list li.task-list-item input[type="checkbox"]');
+                            if (ALL_TASK_ITEMS.length > 0) {
+                                let checkItems = 0;
+                                ALL_TASK_ITEMS.each(function() {
+                                    const TASK_ITEM = jQuery(this);
+
+                                    if (TASK_ITEM.prop('checked')) {
+                                        ++checkItems;
+                                    }
+                                });
+
+                                if (checkItems > 0) {
+                                    const PERCENTAGE = checkItems / ALL_TASK_ITEMS.length * 100.0;
+
+                                    const NEW_ITEM_PROGRESS_BAR = jQuery('<div class="vsckb-kanban-card-progress-bar" />');
+                                    NEW_ITEM_PROGRESS_BAR.css('width', Math.floor(PERCENTAGE) + '%');
+
+                                    if (PERCENTAGE < 50.0) {
+                                        NEW_ITEM_PROGRESS_BAR.addClass('bg-danger');
+                                    } else if (PERCENTAGE < 100.0) {
+                                        NEW_ITEM_PROGRESS_BAR.addClass('bg-warning');
+                                    } else {
+                                        NEW_ITEM_PROGRESS_BAR.addClass('bg-success');
+                                    }
+
+                                    NEW_ITEM_PROGRESS_BAR.appendTo( NEW_ITEM_PROGRESS );
+
+                                    NEW_ITEM_PROGRESS.attr('title', `${ PERCENTAGE.toFixed(1) } %`);
+                                    NEW_ITEM_PROGRESS.show();
+                                }
+                            }
                         };
                     }
                 }
@@ -469,7 +506,7 @@ function vsckb_refresh_card_view(onAdded) {
                 onAdded({
                     element: NEW_ITEM,
                     item: i,
-                    type: CARD_TYPE,
+                    type: CARD_TYPE
                 });
             }
         });

@@ -38,3 +38,14 @@ body main .row .col {
 .vsckb-markdown h6 {
     margin-bottom: 4px;
 }
+
+.vsckb-markdown ul.vsckb-task-list {
+    margin: 0 0 4px 0;
+    padding: 0 0 0 4px;
+}
+
+.vsckb-markdown ul.vsckb-task-list li.task-list-item {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}

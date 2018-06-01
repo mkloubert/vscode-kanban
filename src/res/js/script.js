@@ -31,8 +31,40 @@ function vsckb_from_markdown(md) {
            .addClass('table-striped')
            .addClass('table-hover');
 
+    // make images responsive
     CONTENT.find('img')
            .addClass('img-fluid');
+
+    // task lists
+    CONTENT.find('ul li.task-list-item input[type="checkbox"]').each(function() {
+        const CHECKBOX = jQuery(this);
+        const LI = CHECKBOX.parent();
+
+        const UL = LI.parent();
+        UL.attr('class', 'vsckb-task-list');
+
+        const IS_CHECKED = CHECKBOX.prop('checked');
+
+        CHECKBOX.remove();
+
+        const LABEL = vsckb_to_string(LI.text()).trim();
+
+        LI.html('');
+        LI.attr('style', null);
+
+        const NEW_CHECKBOX = jQuery('<div class="form-check">' + 
+                                    '<input class="form-check-input" type="checkbox" value="1">' + 
+                                    '<label class="form-check-label" />' + 
+                                    '</div>');
+        NEW_CHECKBOX.find('input.form-check-input')
+                    .prop('checked', IS_CHECKED)
+                    .prop('disabled', true);
+
+        NEW_CHECKBOX.find('.form-check-label')
+                    .text( LABEL );
+
+        NEW_CHECKBOX.appendTo( LI );
+    });
 
     // dynamic links do not work in webviews
     CONTENT.find('a').each(function() {
