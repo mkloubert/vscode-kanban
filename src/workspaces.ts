@@ -17,6 +17,7 @@
 
 import * as _ from 'lodash';
 import * as FSExtra from 'fs-extra';
+const HumanizeDuration = require('humanize-duration');
 import * as Moment from 'moment';
 import * as Path from 'path';
 import * as vsckb from './extension';
@@ -616,6 +617,16 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
         tag['time-tracking']['seconds'] = seconds;
 
         await args.setTag( tag );
+
+        if (Moment.isMoment(lastStartTime)) {
+            vscode.window.showInformationMessage(
+                'Time tracking has been started.'
+            );
+        } else {
+            vscode.window.showInformationMessage(
+                `Time tracking has been STOPPED. Current duration: ${ HumanizeDuration(seconds * 1000.0) }`
+            );
+        }
     }
 
     private tryCreateGitClient() {

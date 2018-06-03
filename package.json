@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.9.0",
+    "version": "1.9.1",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -151,6 +151,7 @@
     "dependencies": {
         "fs-extra": "^6.0.1",
         "html-entities": "^1.2.1",
+        "humanize-duration": "^3.14.0",
         "lodash": "^4.17.10",
         "marked": "^0.4.0",
         "vscode-helpers": "^2.6.2"
