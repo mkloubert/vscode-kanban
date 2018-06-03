@@ -1,5 +1,6 @@
 
 let allCards;
+let boardSettings;
 let currentUser;
 let nextKanbanCardId;
 let vsckb_update_card_interval = false;
@@ -197,6 +198,15 @@ function vsckb_refresh_card_view(onAdded) {
 
     nextKanbanCardId = -1;
 
+    let canTrackTime = false;
+
+    const BOARD_SETTINGS = boardSettings;
+    if (BOARD_SETTINGS) {
+        if (!vsckb_is_nil(BOARD_SETTINGS.canTrackTime)) {
+            canTrackTime = !!BOARD_SETTINGS.canTrackTime;
+        }
+    }
+
     for (const TYPE in allCards) {
         const CARD = jQuery(`#vsckb-card-${ TYPE }`);
         const CARD_BODY = CARD.find('.vsckb-primary-card-body');
@@ -253,6 +263,22 @@ function vsckb_refresh_card_view(onAdded) {
                 NEW_ITEM.find('.vsckb-kanban-card-type')
                         .addClass( newItemTypeBgColor )
                         .addClass( newItemTypeTextColor );
+            }
+
+            // track time button
+            if (canTrackTime) {
+                const TRACK_TIME_BTN = jQuery('<a class="btn btn-sm" title="Track Time">' + 
+                                              '<i class="fa fa-clock-o" aria-hidden="true"></i>' + 
+                                              '</a>');
+                
+                TRACK_TIME_BTN.on('click', function() {
+                    vsckb_raise_event('track_time', {
+                        card: i,
+                        column: CARD_TYPE
+                    });
+                });
+
+                TRACK_TIME_BTN.appendTo( NEW_ITEM_TYPE );
             }
 
             // edit button
@@ -978,11 +1004,12 @@ jQuery(() => {
             switch (MSG.command) {
                 case 'setBoard':
                     {
-                        allCards = MSG.data;
+                        allCards = MSG.data.cards;
+                        boardSettings = MSG.data.settings;
 
                         vsckb_foreach_card((card, i) => {
                             card['__uid'] = `${ i }-${ Math.floor(Math.random() * 597923979) }-${ (new Date()).getTime() }`;
-                        }, MSG.data);
+                        }, MSG.data.cards);
 
                         vsckb_refresh_card_view();
                     }

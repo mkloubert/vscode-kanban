@@ -37,6 +37,16 @@ export interface ActionQuickPickItem extends vscode.QuickPickItem {
 }
 
 /**
+ * A message item for a popup with an action.
+ */
+export interface ActionMessageItem extends vscode.MessageItem {
+    /**
+     * The (optional) action to invoke.
+     */
+    action?: () => any;
+}
+
+/**
  * Options for open function.
  */
 export interface OpenOptions {
@@ -167,7 +177,7 @@ export async function activate(context: vscode.ExtensionContext) {
                     if (ev === vscode_helpers.WorkspaceWatcherEvent.Added) {
                         if (folder && folder.uri && (['', 'file'].indexOf( vscode_helpers.normalizeString(folder.uri.scheme) ) > -1)) {
                             // only if local URI
-                            return await createNewWorkspace( folder );
+                            return await createNewWorkspace(folder, context);
                         }
                     }
                 } finally { }
@@ -259,10 +269,10 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 }
 
-async function createNewWorkspace(folder: vscode.WorkspaceFolder) {
+async function createNewWorkspace(folder: vscode.WorkspaceFolder, extension: vscode.ExtensionContext) {
     let newWorkspace: vsckb_workspaces.Workspace;
     try {
-        newWorkspace = new vsckb_workspaces.Workspace(folder);
+        newWorkspace = new vsckb_workspaces.Workspace(folder, extension);
 
         await newWorkspace.initialize();
 

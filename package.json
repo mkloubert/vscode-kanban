@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -15,7 +15,7 @@
         "Project",
         "Management",
         "Todo",
-        "Cards",
+        "Toggl",
         "multi-root ready"
     ],
     "activationEvents": [
@@ -36,6 +36,9 @@
                     "type": "object",
                     "scope": "resource",
                     "properties": {
+                        "globals": {
+                            "description": "Any data, which can be accessed inside the whole extension context, like scripts, e.g."
+                        },
                         "noScmUser": {
                             "description": "Do not detect username via source control manager like Git.",
                             "type": "boolean",
@@ -50,6 +53,58 @@
                             "description": "Open the board for that workspace on startup or not.",
                             "type": "boolean",
                             "default": false
+                        },
+                        "trackTime": {
+                            "description": "Settings for 'time tracking' feature.",
+                            "oneOf": [
+                                {
+                                    "description": "Enable (simple) time tracking or not.",
+                                    "type": "boolean",
+                                    "default": false
+                                },
+                                {
+                                    "description": "Settings for tracking time via 'onTrackTime' of 'vscode-kanban.js' file.",
+                                    "type": "object",
+                                    "properties": {
+                                        "options": {
+                                            "description": "Options / data for the execution of the function."
+                                        },
+                                        "type": {
+                                            "description": "The type.",
+                                            "type": "string",
+                                            "enum": [
+                                                "",
+                                                "script"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "description": "Settings for tracking time via Toggle.com",
+                                    "type": "object",
+                                    "properties": {
+                                        "project": {
+                                            "description": "The ID of the project.",
+                                            "type": "integer"
+                                        },
+                                        "token": {
+                                            "description": "The personal API token or the path to a text file, that contains it.",
+                                            "type": "string"
+                                        },
+                                        "type": {
+                                            "description": "The type.",
+                                            "type": "string",
+                                            "enum": [
+                                                "toggl",
+                                                "toggle"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "token"
+                                    ]
+                                }
+                            ]
                         }
                     }
                 }
@@ -90,7 +145,7 @@
         "@types/mocha": "^2.2.42",
         "@types/node": "^7.0.43",
         "tslint": "^5.8.0",
-        "typescript": "^2.6.1",
+        "typescript": "2.8.3",
         "vscode": "^1.1.6"
     },
     "dependencies": {
@@ -98,6 +153,6 @@
         "html-entities": "^1.2.1",
         "lodash": "^4.17.10",
         "marked": "^0.4.0",
-        "vscode-helpers": "^2.5.1"
+        "vscode-helpers": "^2.6.2"
     }
 }

@@ -17,6 +17,10 @@
    * [Settings](#settings-)
    * [Markdown support](#markdown-support-)
    * [Handle events](#handle-events-)
+   * [Time tracking](#time-tracking-)
+     * [Simple time tracking](#simple-time-tracking-)
+     * [Toggl](#toggl-)
+     * [Custom time tracking](#custom-time-tracking-)
 3. [Support and contribute](#support-and-contribute-)
 4. [Related projects](#related-projects-)
    * [vscode-helpers](#vscode-helpers-)
@@ -58,6 +62,7 @@ Add a `kanban` section:
 | `noScmUser` | Do not detect username via source control manager like Git. Default: `(false)` |
 | `noSystemUser` | Do not detect username of operating system. Default: `(false)` |
 | `openOnStartup` | Opens a board, after a workspace (folder) has been loaded. Default: `(false)` |
+| `trackTime` | Settings for [time tracking](#time-tracking-) feature. Default: `(false)` |
 
 ### Markdown support [[&uarr;](#how-to-use-)]
 
@@ -85,7 +90,7 @@ Code blocks are parsed by [highlight.js](https://highlightjs.org/) and all [prov
 
 ### Handle events [[&uarr;](#how-to-use-)]
 
-For handling events, you can create a JavaScript file, called `vscode-kanban.js`, inside your `.vscode` subfolder of your workspace and start with the following skeleton (s. [EventScriptModule](https://mkloubert.github.io/vscode-kanban/interfaces/_workspaces_.eventscriptmodule.html) interface):
+For handling events, you can create a [Node.js](https://nodejs.org/) JavaScript file, called `vscode-kanban.js`, inside your `.vscode` subfolder of your workspace and start with the following skeleton (s. [EventScriptModule](https://mkloubert.github.io/vscode-kanban/interfaces/_workspaces_.eventscriptmodule.html) interface):
 
 ```javascript
 // all 'args' parameters are based on
@@ -147,11 +152,131 @@ exports.onColumnCleared = async (args) => {
 
 // [OPTIONAL]
 // 
+// Is raised when an user clicks on a card's 'Track Time' button.
+// This requires global extension / workspace setting 'canTrackTime' to be set to (true).
+exports.onTrackTime = async (args) => {
+    // args => https://mkloubert.github.io/vscode-kanban/interfaces/_workspaces_.eventscriptfunctionarguments.html
+    // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.tracktimeeventarguments.html
+};
+
+
+// [OPTIONAL]
+// 
 // Generic fallback function, if a function is not defined for an event.
 exports.onEvent = async (args) => {
     // args.name => name of the event
     // args.data => object with event data  
 };
+```
+
+### Time tracking [[&uarr;](#how-to-use-)]
+
+### Simple time tracking [[&uarr;](#time-tracking-)]
+
+![Demo 3](https://raw.githubusercontent.com/mkloubert/vscode-kanban/master/img/demo3.gif)
+
+Set the value of `trackTime` inside your `.vscode/settings.json` to `(true)`:
+
+```json
+{
+    "kanban": {
+        "trackTime": true
+    }
+}
+```
+
+This will run a simple workflow, which writes all required data to the `tag` property of the underlying card (s. `.vscode/vscode-kanban.json`).
+
+### Toggl [[&uarr;](#time-tracking-)]
+
+![Demo 4](https://raw.githubusercontent.com/mkloubert/vscode-kanban/master/img/demo4.gif)
+
+To use the build-in [Toggl](https://www.toggl.com/) integration, you have to setup your personal API token, which can you find in your profile settings:
+
+```json
+{
+    "kanban": {
+        "trackTime": {
+            "type": "toggl",
+            "token": "<YOUR-API-TOKEN>"
+        }
+    }
+}
+```
+
+If you do not want (or if you not able) to save the token in the settings, you can define the path to a text file, which contains it.
+
+For example, create a text file inside your home directory, like `toggl.txt`, and write the token there. After that, you must define the path of the text file in the settings (`.vscode/settings.json`):
+
+```json
+{
+    "kanban": {
+        "trackTime": {
+            "type": "toggl",
+            "token": "toggl.txt"
+        }
+    }
+}
+```
+
+You also can define an absolute path, like `D:/toggl/api-token.txt` or `/home/mkloubert/toggl-api-token.txt`.
+
+For the case, your board belongs to a specific Toggl project and you know its ID, you can define it explicitly:
+
+```json
+{
+    "kanban": {
+        "trackTime": {
+            "type": "toggl",
+            "token": "<API-TOKEN>",
+
+            "project": 123
+        }
+    }
+}
+```
+
+### Custom time tracking [[&uarr;](#time-tracking-)]
+
+For handling 'track time' events, you can create or edit a [Node.js](https://nodejs.org/) JavaScript file, called `vscode-kanban.js`, inside your `.vscode` subfolder of your workspace and add the following function:
+
+```javascript
+exports.onTrackTime = async (args) => {
+    // args => https://mkloubert.github.io/vscode-kanban/interfaces/_workspaces_.eventscriptfunctionarguments.html
+    // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.tracktimeeventarguments.html
+
+    // use any Node.js 7 API, s. https://nodejs.org/
+    const fs = require('fs');
+
+    // use VSCode API, s. https://code.visualstudio.com/docs/extensionAPI/vscode-api
+    const vscode = require('vscode');
+
+    // access a module of that extension
+    // s. https://github.com/mkloubert/vscode-kanban/blob/master/package.json
+    const moment = args.require('moment');
+
+    // options from the settings, s. below
+    const OPTS = args.options;
+
+
+    // start implement your workflow here
+};
+```
+
+You also have to update the extension settings:
+
+```json
+{
+    "kanban": {
+        "trackTime": {
+            "type": "script",
+            "options": {
+                "MK": 239.79,
+                "TM": "5979"
+            }
+        }
+    }
+}
 ```
 
 ## Support and contribute [[&uarr;](#table-of-contents)]

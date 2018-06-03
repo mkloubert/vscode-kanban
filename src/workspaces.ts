@@ -17,9 +17,11 @@
 
 import * as _ from 'lodash';
 import * as FSExtra from 'fs-extra';
+import * as Moment from 'moment';
 import * as Path from 'path';
 import * as vsckb from './extension';
 import * as vsckb_boards from './boards';
+import * as vsckb_toggl from './toggl';
 import * as vscode from 'vscode';
 import * as vscode_helpers from 'vscode-helpers';
 
@@ -43,6 +45,10 @@ export interface CanSetCardTag {
  */
 export interface Config extends vscode.WorkspaceConfiguration {
     /**
+     * Any data, which can be accessed inside the whole extension context, like scripts, e.g.
+     */
+    readonly globals?: any;
+    /**
      * Do not detect username via source control manager.
      */
     readonly noScmUser?: boolean;
@@ -54,6 +60,10 @@ export interface Config extends vscode.WorkspaceConfiguration {
      * Open the board for that workspace on startup.
      */
     readonly openOnStartup?: boolean;
+    /**
+     * Enable time tracking or not.
+     */
+    readonly trackTime?: TimeTrackingSettingValue;
 }
 
 /**
@@ -84,6 +94,10 @@ export interface EventScriptModule {
      * Generic fallback.
      */
     onEvent?: EventScriptFunction;
+    /**
+     * Is raised time tracking should be started or stopped.
+     */
+    onTrackTime?: EventScriptFunction<TrackTimeEventArguments>;
 }
 
 /**
@@ -102,17 +116,34 @@ export interface EventScriptFunctionArguments {
      */
     data: any;
     /**
+     * The current context of the underlying extension.
+     */
+    extension: vscode.ExtensionContext;
+    /**
      * The path of the underlying board file.
      */
     file: string;
+    /**
+     * The data from the 'globals' setting of the extension.
+     */
+    globals: any;
     /**
      * The name of the event.
      */
     name: string;
     /**
+     * Data / options for the execution.
+     */
+    options?: any;
+    /**
      * An extended 'require()' function, which can also access the modules of that extension.
      */
     require: (id: string) => any;
+    /**
+     * Accesses the global state object, which can share data
+     * accross the extension, while the current session.
+     */
+    session: any;
 }
 
 /**
@@ -125,7 +156,38 @@ export interface HasTag {
     readonly tag: any;
 }
 
+/**
+ * Settings for tracking time by script.
+ */
+export interface TimeTrackingByScriptSettings extends TimeTrackingSettings {
+    /**
+     * Options for the script.
+     */
+    readonly options?: any;
+}
+
+/**
+ * Settings for tracking time.
+ */
+export interface TimeTrackingSettings {
+    /**
+     * The type.
+     */
+    readonly type?: string;
+}
+
+/**
+ * A possible value for 'trackTime' extension setting.
+ */
+export type TimeTrackingSettingValue = boolean | TimeTrackingSettings;
+
+/**
+ * Event argument for a 'track time' event.
+ */
+export type TrackTimeEventArguments = EventScriptFunctionArguments & CanSetCardTag & HasTag;
+
 const BOARD_FILENAME = 'vscode-kanban.json';
+const EVENT_TRACK_TIME = 'track_time';
 const SCRIPT_FILENAME = 'vscode-kanban.js';
 
 /**
@@ -143,12 +205,36 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
     private _configSrc: vscode_helpers.WorkspaceConfigSource;
     private _isReloadingConfig = false;
 
+    /**
+     * Initializes a new instance of that class.
+     *
+     * @param {vscode.WorkspaceFolder} folder The underlying folder.
+     * @param {vscode.ExtensionContext} extension The exitension context.
+     */
+    public constructor(
+        folder: vscode.WorkspaceFolder,
+        public readonly extension: vscode.ExtensionContext
+    ) {
+        super(folder);
+    }
+
     public get boardFile(): vscode.Uri {
         return vscode.Uri.file(
             Path.resolve(
                 Path.join(this.folder.uri.fsPath, '.vscode/' + BOARD_FILENAME)
             )
         );
+    }
+
+    /**
+     * Gets if the workspace is setup for 'time tracking' or not.
+     */
+    public get canTrackTime(): boolean {
+        const CFG = this.config;
+        if (CFG) {
+            return !_.isNil(CFG.trackTime) &&
+                   (false !== CFG.trackTime);
+        }
     }
 
     /**
@@ -270,6 +356,9 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                     this.boardFile.fsPath
                 );
             },
+            settings: {
+                canTrackTime: this.canTrackTime,
+            },
             title: title,
         });
     }
@@ -285,128 +374,248 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
     }
 
     private async raiseEvent(context: vsckb_boards.EventListenerContext) {
-        const SCRIPT_FILE = vscode.Uri.file( Path.join(this.rootPath,
-                                                       '.vscode/' + SCRIPT_FILENAME) );
+        const CFG = this.config;
+        if (!CFG) {
+            return;
+        }
 
-        try {
-            if (!(await vscode_helpers.isFile(SCRIPT_FILE.fsPath, false))) {
-                return;
-            }
-        } catch { }
+        let func: Function;
+        let options: any;
 
-        const SCRIPT_MODULE = vscode_helpers.loadModule<EventScriptModule>(SCRIPT_FILE.fsPath);
-        if (SCRIPT_MODULE) {
-            let scriptFunc: Function;
+        let setupUID = false;
+        let setupSetTag = false;
+        let setupTag = false;
 
-            let thisArg: any = SCRIPT_MODULE;
-            const ARGS: EventScriptFunctionArguments = {
-                data: context.data,
-                file: Path.resolve(
-                    this.boardFile.fsPath
-                ),
-                name: context.name,
-                require: (id) => {
-                    return require(
-                        vscode_helpers.toStringSafe(id)
-                    );
-                }
-            };
+        const SETUP_FOR_TRACK_TIME = () => {
+            setupUID = true;
+            setupSetTag = true;
+            setupTag = true;
+        };
 
-            let setupUID = false;
-            let setupSetTag = false;
-            let setupTag = false;
-
-            switch (context.name) {
-                case 'card_created':
-                    scriptFunc = SCRIPT_MODULE.onCardCreated;
-                    setupUID = true;
-                    setupSetTag = true;
-                    setupTag = true;
-                    break;
-
-                case 'card_deleted':
-                    scriptFunc = SCRIPT_MODULE.onCardDeleted;
-                    setupUID = true;
-                    setupTag = true;
-                    break;
-
-                case 'card_moved':
-                    scriptFunc = SCRIPT_MODULE.onCardMoved;
-                    setupUID = true;
-                    setupSetTag = true;
-                    setupTag = true;
-                    break;
-
-                case 'card_updated':
-                    scriptFunc = SCRIPT_MODULE.onCardUpdated;
-                    setupUID = true;
-                    setupSetTag = true;
-                    setupTag = true;
-                    break;
-
-                case 'column_cleared':
-                    scriptFunc = SCRIPT_MODULE.onColumnCleared;
-                    break;
-            }
-
-            if (setupTag) {
-                // ARGS.tag
-                Object.defineProperty(ARGS, 'tag', {
-                    get: function () {
-                        return this.data.card.tag;
-                    }
-                });
-            }
-
-            if (setupUID) {
-                // ARGS.uid
-                Object.defineProperty(ARGS, 'uid', {
-                    get: function () {
-                        return this.data.card.__uid;
-                    }
-                });
-            }
-
-            if (setupSetTag) {
-                // ARGS.setTag()
-                ARGS['setTag'] = async function(tag: any) {
-                    const UID: string = this.uid;
-
-                    let result: boolean;
-                    try {
-                        result = await context.postMessage(
-                            'setCardTag', {
-                                tag: tag,
-                                uid: UID,
-                            }
-                        );
-                    } catch {
-                        result = false;
-                    }
-
-                    if (result) {
-                        this.data.card.tag = tag;
-                    }
-
-                    return result;
-                };
-            }
-
-            if (!scriptFunc) {
-                scriptFunc = SCRIPT_MODULE.onEvent;  // try use fallback
-            }
-
-            if (scriptFunc) {
-                await Promise.resolve(
-                    scriptFunc.apply(thisArg,
-                                     [ ARGS ])
+        let thisArg: any;
+        const ARGS: EventScriptFunctionArguments = {
+            data: context.data,
+            extension: this.extension,
+            file: Path.resolve(
+                this.boardFile.fsPath
+            ),
+            globals: vscode_helpers.cloneObject(
+                CFG.globals
+            ),
+            name: context.name,
+            require: (id) => {
+                return require(
+                    vscode_helpers.toStringSafe(id)
                 );
+            },
+            session: vscode_helpers.SESSION,
+        };
+
+        if (EVENT_TRACK_TIME === context.name) {
+            if (this.canTrackTime) {
+                thisArg = this;
+
+                if (_.isObject(CFG.trackTime)) {
+                    const SETTINGS = <TimeTrackingSettings>CFG.trackTime;
+
+                    switch (SETTINGS.type) {
+                        case '':
+                        case 'script':
+                            {
+                                const SCRIPT_SETTINGS = <TimeTrackingByScriptSettings>SETTINGS;
+
+                                options = SCRIPT_SETTINGS.options;
+                            }
+                            break;
+
+                        case 'toggl':
+                        case 'toggle':
+                            {
+                                const TOGGLE_SETTINGS = <vsckb_toggl.TimeTrackingByToggleSettings>SETTINGS;
+
+                                func = async () => {
+                                    await vscode_helpers.applyFuncFor(
+                                        vsckb_toggl.trackTime, this
+                                    )(<TrackTimeEventArguments>ARGS, TOGGLE_SETTINGS);
+                                };
+                            }
+                            break;
+
+                        default:
+                            return;  // not supported
+                    }
+                } else {
+                    if (vscode_helpers.toBooleanSafe(CFG.trackTime)) {
+                        func = this.trackTime;
+                        SETUP_FOR_TRACK_TIME();
+                    }
+                }
             }
+        }
+
+        if (!func) {
+            const SCRIPT_FILE = vscode.Uri.file( Path.join(this.rootPath,
+                                                           '.vscode/' + SCRIPT_FILENAME) );
+
+            try {
+                if (!(await vscode_helpers.isFile(SCRIPT_FILE.fsPath, false))) {
+                    return;
+                }
+            } catch { }
+
+            const SCRIPT_MODULE = thisArg = vscode_helpers.loadModule<EventScriptModule>(SCRIPT_FILE.fsPath);
+            if (SCRIPT_MODULE) {
+                switch (context.name) {
+                    case 'card_created':
+                        func = SCRIPT_MODULE.onCardCreated;
+                        setupUID = true;
+                        setupSetTag = true;
+                        setupTag = true;
+                        break;
+
+                    case 'card_deleted':
+                        func = SCRIPT_MODULE.onCardDeleted;
+                        setupUID = true;
+                        setupTag = true;
+                        break;
+
+                    case 'card_moved':
+                        func = SCRIPT_MODULE.onCardMoved;
+                        setupUID = true;
+                        setupSetTag = true;
+                        setupTag = true;
+                        break;
+
+                    case 'card_updated':
+                        func = SCRIPT_MODULE.onCardUpdated;
+                        setupUID = true;
+                        setupSetTag = true;
+                        setupTag = true;
+                        break;
+
+                    case 'column_cleared':
+                        func = SCRIPT_MODULE.onColumnCleared;
+                        break;
+
+                    case EVENT_TRACK_TIME:
+                        func = SCRIPT_MODULE.onTrackTime;
+                        SETUP_FOR_TRACK_TIME();
+                        break;
+                }
+
+                if (!func) {
+                    func = SCRIPT_MODULE.onEvent;  // try use fallback
+                }
+            }
+        }
+
+        ARGS.options = vscode_helpers.cloneObject(
+            options
+        );
+
+        if (setupTag) {
+            // ARGS.tag
+            Object.defineProperty(ARGS, 'tag', {
+                get: function () {
+                    return this.data.card.tag;
+                }
+            });
+        }
+
+        if (setupUID) {
+            // ARGS.uid
+            Object.defineProperty(ARGS, 'uid', {
+                get: function () {
+                    return this.data.card.__uid;
+                }
+            });
+        }
+
+        if (setupSetTag) {
+            // ARGS.setTag()
+            ARGS['setTag'] = async function(tag: any) {
+                const UID: string = this.uid;
+
+                let result: boolean;
+                try {
+                    result = await context.postMessage(
+                        'setCardTag', {
+                            tag: tag,
+                            uid: UID,
+                        }
+                    );
+                } catch {
+                    result = false;
+                }
+
+                if (result) {
+                    this.data.card.tag = tag;
+                }
+
+                return result;
+            };
+        }
+
+        if (func) {
+            await Promise.resolve(
+                func.apply(thisArg,
+                           [ ARGS ])
+            );
         }
     }
 
     private showError(err: any) {
         return vsckb.showError(err);
+    }
+
+    private async trackTime(args: TrackTimeEventArguments) {
+        let tag = args.tag;
+        if (_.isNil(tag)) {
+            tag = {};  // initialize card's 'tag'
+        }
+
+        if (_.isNil(tag['time-tracking'])) {
+            // initialize 'time-tracking' property
+            // of card's 'tag'
+
+            tag['time-tracking'] = {
+                'seconds': 0,
+                'entries': []
+            };
+        }
+
+        // add current time
+        // as UTC
+        tag['time-tracking']['entries'].push(
+            Moment.utc()
+                  .toISOString()
+        );
+
+        let seconds = 0.0;
+        let lastStartTime: false | Moment.Moment = false;
+        for (let i = 0; i < tag['time-tracking']['entries'].length; i++) {
+            const TIME = Moment.utc(
+                tag['time-tracking']['entries'][i]
+            );
+
+            if (false === lastStartTime) {
+                // start time
+                lastStartTime = TIME;
+            } else {
+                // end time
+                // calculate difference
+                // and add value
+                seconds += Moment.duration( TIME.diff(lastStartTime) )
+                                 .asSeconds();
+
+                lastStartTime = false;
+            }
+        }
+
+        // store sum
+        tag['time-tracking']['seconds'] = seconds;
+
+        await args.setTag( tag );
     }
 
     private tryCreateGitClient() {

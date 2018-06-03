@@ -90,6 +90,16 @@ export interface BoardCard {
 }
 
 /**
+ * Board settings.
+ */
+export interface BoardSettings {
+    /**
+     * Enable time tracking or not.
+     */
+    canTrackTime?: boolean;
+}
+
+/**
  * Data of a 'card created' event.
  */
 export interface CardCreatedEventData extends EventDataWithUniqueId {
@@ -230,6 +240,10 @@ export interface OpenBoardOptions {
      */
     saveBoard?: SaveBoardEventListener;
     /**
+     * The settings for the board.
+     */
+    settings?: BoardSettings;
+    /**
      * Display options for the tab of the underlying view.
      */
     showOptions?: vscode.ViewColumn;
@@ -254,6 +268,20 @@ interface RaiseEvent {
  * @param {Board} board The board to save.
  */
 export type SaveBoardEventListener = (board: Board) => any;
+
+/**
+ * Data of a 'track time' event.
+ */
+export interface TrackTimeEventData extends EventDataWithUniqueId {
+    /**
+     * The card with the current data.
+     */
+    card: BoardCard;
+    /**
+     * The name of the column where the card has been updated.
+     */
+    column: string;
+}
 
 interface WebViewMessage extends vsckb.WebViewMessage {
 }
@@ -875,8 +903,10 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
             loadedBoard = newBoard();
         }
 
-        await this.postMessage('setBoard',
-                               loadedBoard);
+        await this.postMessage('setBoard', {
+            cards: loadedBoard,
+            settings: this.openOptions.settings,
+        });
     }
 
     /**
