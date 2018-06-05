@@ -199,11 +199,16 @@ function vsckb_refresh_card_view(onAdded) {
     nextKanbanCardId = -1;
 
     let canTrackTime = false;
+    let hideTimeTrackingIfIdle = false;
 
     const BOARD_SETTINGS = boardSettings;
     if (BOARD_SETTINGS) {
         if (!vsckb_is_nil(BOARD_SETTINGS.canTrackTime)) {
             canTrackTime = !!BOARD_SETTINGS.canTrackTime;
+        }
+
+        if (!vsckb_is_nil(BOARD_SETTINGS.hideTimeTrackingIfIdle)) {
+            hideTimeTrackingIfIdle = !!BOARD_SETTINGS.hideTimeTrackingIfIdle;
         }
     }
 
@@ -267,18 +272,28 @@ function vsckb_refresh_card_view(onAdded) {
 
             // track time button
             if (canTrackTime) {
-                const TRACK_TIME_BTN = jQuery('<a class="btn btn-sm" title="Track Time">' + 
-                                              '<i class="fa fa-clock-o" aria-hidden="true"></i>' + 
-                                              '</a>');
-                
-                TRACK_TIME_BTN.on('click', function() {
-                    vsckb_raise_event('track_time', {
-                        card: i,
-                        column: CARD_TYPE
-                    });
-                });
+                let showTrackTimeButton = true;
 
-                TRACK_TIME_BTN.appendTo( NEW_ITEM_TYPE );
+                if (hideTimeTrackingIfIdle) {
+                    if (['todo', 'done'].indexOf(CARD_TYPE) > -1) {
+                        showTrackTimeButton = false;
+                    }
+                }
+
+                if (showTrackTimeButton) {
+                    const TRACK_TIME_BTN = jQuery('<a class="btn btn-sm" title="Track Time">' + 
+                                                  '<i class="fa fa-clock-o" aria-hidden="true"></i>' + 
+                                                  '</a>');
+                    
+                    TRACK_TIME_BTN.on('click', function() {
+                        vsckb_raise_event('track_time', {
+                            card: i,
+                            column: CARD_TYPE
+                        });
+                    });
+
+                    TRACK_TIME_BTN.appendTo( NEW_ITEM_TYPE );
+                }
             }
 
             // edit button

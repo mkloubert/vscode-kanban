@@ -97,6 +97,10 @@ export interface BoardSettings {
      * Enable time tracking or not.
      */
     canTrackTime?: boolean;
+    /**
+     * Do not show 'track time' button, if a card is stored in 'Todo' or 'Done'.
+     */
+    hideTimeTrackingIfIdle?: boolean;
 }
 
 /**

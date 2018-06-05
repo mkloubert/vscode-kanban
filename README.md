@@ -61,6 +61,7 @@ Add a `kanban` section:
 | ---- | --------- |
 | `noScmUser` | Do not detect username via source control manager like Git. Default: `(false)` |
 | `noSystemUser` | Do not detect username of operating system. Default: `(false)` |
+| `noTimeTrackingIfIdle` | Do not show 'track time' button, if a card is stored in 'Todo' or 'Done'. Default: `(false)` |
 | `openOnStartup` | Opens a board, after a workspace (folder) has been loaded. Default: `(false)` |
 | `trackTime` | Settings for [time tracking](#time-tracking-) feature. Default: `(false)` |
 

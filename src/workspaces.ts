@@ -58,6 +58,10 @@ export interface Config extends vscode.WorkspaceConfiguration {
      */
     readonly noSystemUser?: boolean;
     /**
+     * Do not show 'track time' button, if a card is stored in 'Todo' or 'Done'.
+     */
+    readonly noTimeTrackingIfIdle?: boolean;
+    /**
      * Open the board for that workspace on startup.
      */
     readonly openOnStartup?: boolean;
@@ -359,6 +363,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
             },
             settings: {
                 canTrackTime: this.canTrackTime,
+                hideTimeTrackingIfIdle: vscode_helpers.toBooleanSafe(CFG.noTimeTrackingIfIdle),
             },
             title: title,
         });

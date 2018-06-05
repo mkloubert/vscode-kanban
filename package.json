@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.9.1",
+    "version": "1.10.0",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -46,6 +46,11 @@
                         },
                         "noSystemUser": {
                             "description": "Do not detect username of operating system.",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "noTimeTrackingIfIdle": {
+                            "description": "Do not show 'track time' button, if a card is stored in 'Todo' or 'Done'.",
                             "type": "boolean",
                             "default": false
                         },
