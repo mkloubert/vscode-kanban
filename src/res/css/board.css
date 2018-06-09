@@ -56,6 +56,14 @@ body main .row .col .vsckb-card .card-body {
     padding: 2px 8px;
 }
 
+.vsckb-kanban-card .vsckb-kanban-card-info .vsckb-kanban-card-category {
+    clear: both;
+    display: block;
+    font-size: 0.75em;
+    font-style: italic;
+    padding: 0 8px 2px 8px;
+}
+
 .vsckb-kanban-card .vsckb-kanban-card-info .vsckb-kanban-card-progress {
     clear: both;
     display: block;

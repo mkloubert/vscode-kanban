@@ -348,6 +348,13 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
         }
 
         await vsckb_boards.openBoard({
+            additionalResourceRoots: [
+                vscode.Uri.file(
+                    Path.resolve(
+                        Path.join(this.folder.uri.fsPath, '.vscode')
+                    )
+                )
+            ],
             fileResolver: () => this.boardFile,
             git: await this.tryCreateGitClient(),
             noScmUser: CFG.noScmUser,

@@ -21,8 +21,10 @@
      * [Simple time tracking](#simple-time-tracking-)
      * [Toggl](#toggl-)
      * [Custom time tracking](#custom-time-tracking-)
-3. [Support and contribute](#support-and-contribute-)
-4. [Related projects](#related-projects-)
+3. [Customization](#customization-)
+   * [CSS](#css-)
+4. [Support and contribute](#support-and-contribute-)
+5. [Related projects](#related-projects-)
    * [vscode-helpers](#vscode-helpers-)
 
 Launch VS Code Quick Open (`Ctrl + P`), paste the following command, and press enter:
@@ -279,6 +281,14 @@ You also have to update the extension settings:
     }
 }
 ```
+
+## Customization [[&uarr;](#how-to-use-)]
+
+### CSS [[&uarr;](#customization-)]
+
+If you want to style your board, you can create a file, called `vscode-kanban.css`, inside your `.vscode` sub folder of the underlying workspace or your home directory.
+
+Have a look at the files [board.css](https://github.com/mkloubert/vscode-kanban/blob/master/src/res/css/board.css) and [style.css](https://github.com/mkloubert/vscode-kanban/blob/master/src/res/css/style.css) to get an idea of the CSS classes, that are used.
 
 ## Support and contribute [[&uarr;](#table-of-contents)]
 

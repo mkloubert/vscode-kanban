@@ -21,7 +21,6 @@ import * as OS from 'os';
 import * as Path from 'path';
 import * as vsckb from './extension';
 import * as vsckb_html from './html';
-import * as vsckb_workspaces from './workspaces';
 import * as vscode from 'vscode';
 import * as vscode_helpers from 'vscode-helpers';
 
@@ -60,6 +59,10 @@ export interface BoardCard {
          */
         name?: string;
     };
+    /**
+     * The user's category.
+     */
+    category?: string;
     /**
      * The time, the card has been created.
      */
@@ -224,6 +227,10 @@ export interface EventListenerContext {
  */
 export interface OpenBoardOptions {
     /**
+     * Additional, allowed resource directories for the web view(s).
+     */
+    additionalResourceRoots?: vscode.Uri | vscode.Uri[];
+    /**
      * The function that returns the underlying file to use.
      */
     fileResolver?: () => vscode.Uri;
@@ -300,7 +307,6 @@ const KNOWN_URLS = {
  * A kanban board.
  */
 export class KanbanBoard extends vscode_helpers.DisposableBase {
-    private _html: string | false = false;
     private _openOptions: OpenBoardOptions;
     private _panel: vscode.WebviewPanel;
     private _saveBoardEventListener: SaveBoardEventListener[];
@@ -315,48 +321,12 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         }
     }
 
-    /**
-     * Returns an URI from the 'resources' directory.
-     *
-     * @param {string} p The (relative) path.
-     *
-     * @return {vscode.Uri} The URI.
-     */
-    public getResourceUri(p: string): vscode.Uri {
-        p = vscode_helpers.toStringSafe(p);
-
-        let u: vscode.Uri;
-
-        for (const R of vsckb.getWebViewResourceUris()) {
-            const PATH_TO_CHECK = Path.resolve(
-                Path.join(R.fsPath, p)
-            );
-
-            u = vscode.Uri.file( PATH_TO_CHECK ).with({
-                scheme: 'vscode-resource'
-            });
-
-            try {
-                if (vscode_helpers.isFileSync(PATH_TO_CHECK)) {
-                    break;
-                }
-            } catch { }
-        }
-
-        return u;
-    }
-
-    /**
-     * Initializes the board.
-     */
-    public async initialize() {
-        this._saveBoardEventListener = [];
-
+    private generateHTML() {
         const GET_RES_URI = (p: string) => {
             return this.getResourceUri(p);
         };
 
-        this._html = vsckb_html.generateHtmlDocument({
+        return vsckb_html.generateHtmlDocument({
             getContent: () => {
                 return `
 <main role="main" class="container-fluid h-100">
@@ -433,6 +403,8 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 `;
             },
             getFooter: () => {
+                const CUSTOM_STYLE_FILE = GET_RES_URI('vscode-kanban.css');
+
                 return `
 <div class="modal" tabindex="-1" role="dialog" id="vsckb-add-card-modal">
     <div class="modal-dialog" role="document">
@@ -466,6 +438,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                                 <input type="number" id="vsckb-new-card-prio" class="form-control" placeholder="0"></input>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vsckb-new-card-category">Category</label>
+                        <input type="text" class="form-control" id="vsckb-new-card-category">
                     </div>
 
                     <div class="form-group vsckb-card-assigned-to">
@@ -551,6 +528,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label for="vsckb-edit-card-category">Category</label>
+                        <input type="text" class="form-control" id="vsckb-edit-card-category">
+                    </div>
+
                     <div class="form-group vsckb-card-assigned-to">
                         <label for="vsckb-edit-card-assigned-to">Assigned To</label>
                         <input type="text" class="form-control" id="vsckb-edit-card-assigned-to">
@@ -601,6 +583,9 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         </div>
     </div>
 </div>
+
+${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
+                     : '' }
 `;
             },
             getHeaderButtons: () => {
@@ -613,6 +598,56 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
             getResourceUri: GET_RES_URI,
             name: 'board',
         });
+    }
+
+    private getWebViewResourceUris(): vscode.Uri[] {
+        const HOME_DIR = vscode.Uri.file(
+            Path.resolve(
+                OS.homedir()
+            )
+        );
+
+        return vscode_helpers.asArray( this.openOptions.additionalResourceRoots )
+                             .concat( HOME_DIR )
+                             .concat( vsckb.getWebViewResourceUris() );
+    }
+
+    /**
+     * Returns an URI from the 'resources' directory.
+     *
+     * @param {string} p The (relative) path.
+     *
+     * @return {vscode.Uri} The URI.
+     */
+    public getResourceUri(p: string): vscode.Uri {
+        p = vscode_helpers.toStringSafe(p);
+
+        let u: vscode.Uri;
+
+        for (const R of this.getWebViewResourceUris()) {
+            const PATH_TO_CHECK = Path.resolve(
+                Path.join(R.fsPath, p)
+            );
+
+            u = vscode.Uri.file( PATH_TO_CHECK ).with({
+                scheme: 'vscode-resource'
+            });
+
+            try {
+                if (vscode_helpers.isFileSync(PATH_TO_CHECK, false)) {
+                    break;
+                }
+            } catch { }
+        }
+
+        return u;
+    }
+
+    /**
+     * Initializes the board.
+     */
+    public async initialize() {
+        this._saveBoardEventListener = [];
     }
 
     /**
@@ -722,6 +757,8 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
         let newPanel: vscode.WebviewPanel;
         try {
+            this._openOptions = opts;
+
             newPanel = vscode.window.createWebviewPanel(
                 'vscodeKanbanBoard',
                 webViewTitle,
@@ -731,7 +768,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                     enableFindWidget: true,
                     enableScripts: true,
                     retainContextWhenHidden: true,
-                    localResourceRoots: vsckb.getWebViewResourceUris(),
+                    localResourceRoots: this.getWebViewResourceUris(),
                 }
             );
 
@@ -829,16 +866,14 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                 } catch { }
             });
 
-            if (false !== this._html) {
-                newPanel.webview.html = vscode_helpers.toStringSafe(this._html);
-            }
+            newPanel.webview.html = this.generateHTML();
 
-            this._openOptions = opts;
             this._panel = newPanel;
 
             return true;
         } catch (e) {
             vscode_helpers.tryDispose(newPanel);
+            this._openOptions = null;
 
             throw e;
         }

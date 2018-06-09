@@ -230,6 +230,7 @@ function vsckb_refresh_card_view(onAdded) {
                                     '<div class="vsckb-kanban-card-col vsckb-kanban-card-type font-weight-bold" />' + 
                                     '<div class="vsckb-kanban-card-info bg-white text-dark">'  +
                                     '<div class="vsckb-kanban-card-title font-weight-bold" />'  +
+                                    '<div class="vsckb-kanban-card-category" />'  +
                                     '<div class="vsckb-kanban-card-progress" />' + 
                                     '<div class="vsckb-kanban-card-body" />'  +
                                     '</div>'  +
@@ -242,6 +243,9 @@ function vsckb_refresh_card_view(onAdded) {
 
             const NEW_ITEM_INFO = NEW_ITEM.find('.vsckb-kanban-card-info');
             const NEW_ITEM_INFO_BODY = NEW_ITEM_INFO.find('.vsckb-kanban-card-body');
+
+            const NEW_ITEM_CATEGORY = NEW_ITEM.find('.vsckb-kanban-card-category');
+            NEW_ITEM_CATEGORY.hide();
 
             const NEW_ITEM_PROGRESS = NEW_ITEM.find('.vsckb-kanban-card-progress');
             NEW_ITEM_PROGRESS.hide();
@@ -333,6 +337,9 @@ function vsckb_refresh_card_view(onAdded) {
 
                     const PRIO_FIELD = WIN.find('#vsckb-edit-card-prio');
                     PRIO_FIELD.val( vsckb_to_string(i.prio).trim() );
+                    
+                    const CATEGORY_FIELD = WIN.find('#vsckb-edit-card-category');
+                    CATEGORY_FIELD.val( vsckb_to_string(i.category).trim() );
 
                     const ASSIGNED_TO_FIELD = WIN.find('#vsckb-edit-card-assigned-to');
                     ASSIGNED_TO_FIELD.val( vsckb_to_string(user) );
@@ -371,13 +378,19 @@ function vsckb_refresh_card_view(onAdded) {
                         let type = vsckb_normalize_str( TYPE_FIELD.val() );
                         if ('' === type) {
                             type = undefined;
-                        }                        
+                        }
+
+                        let category = vsckb_to_string( CATEGORY_FIELD.val() ).trim();
+                        if ('' === category) {
+                            category = undefined;
+                        }
 
                         i.assignedTo = vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD);
                         i.title = TITLE;
                         i.description = description;
                         i.prio = PRIO;
                         i.type = type;
+                        i.category = category;
                         
                         vsckb_save_board();
             
@@ -462,6 +475,12 @@ function vsckb_refresh_card_view(onAdded) {
 
             NEW_ITEM_INFO.find('.vsckb-kanban-card-title')
                          .text( vsckb_to_string(i.title).trim() );
+
+            let category = vsckb_to_string(i.category).trim();
+            if ('' !== category) {
+                NEW_ITEM_CATEGORY.text( category );
+                NEW_ITEM_CATEGORY.show();
+            }
 
             const DESC = vsckb_get_card_description(i);
             if (!vsckb_is_nil(DESC)) {
@@ -929,6 +948,8 @@ jQuery(() => {
 
         const ASSIGNED_TO_FIELD = WIN.find('#vsckb-new-card-assigned-to');
         const PRIO_FIELD = WIN.find('#vsckb-new-card-prio');
+
+        const CATEGORY_FIELD = WIN.find('#vsckb-new-card-category');
         
         WIN.attr('vsckb-type', TYPE);
 
@@ -973,8 +994,14 @@ jQuery(() => {
                 type = undefined;
             }
 
+            let category = vsckb_to_string( CATEGORY_FIELD.val() ).trim();
+            if ('' === category) {
+                category = undefined;
+            }
+
             const NEW_CARD = {
                 assignedTo: vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD),
+                category: category,
                 creation_time: moment.utc().toISOString(),
                 description: description,
                 prio: PRIO,
