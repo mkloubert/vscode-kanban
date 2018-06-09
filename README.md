@@ -11,6 +11,8 @@
 
 ![Demo 1](https://raw.githubusercontent.com/mkloubert/vscode-kanban/master/img/demo1.gif)
 
+## Table of contents
+
 1. [Install](#install-)
 2. [How to use](#how-to-use-)
    * [How to execute](#how-to-execute-)
