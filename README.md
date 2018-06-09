@@ -282,7 +282,7 @@ You also have to update the extension settings:
 }
 ```
 
-## Customization [[&uarr;](#how-to-use-)]
+## Customization [[&uarr;](#table-of-contents)]
 
 ### CSS [[&uarr;](#customization-)]
 
