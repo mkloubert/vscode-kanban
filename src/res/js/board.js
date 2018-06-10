@@ -46,6 +46,29 @@ function vsckb_get_assigned_to_val(field) {
     return assignedTo;
 }
 
+function vsckb_get_card_colors_by_type(cardType) {
+    const COLORS = {
+        background: 'bg-info',
+        text: 'text-white'
+    };
+
+    switch (vsckb_normalize_str(cardType)) {
+        case 'bug':
+            COLORS.background = 'bg-dark';
+            break;
+
+        case 'emergency':
+            COLORS.background = 'bg-danger';
+            break;
+
+        default:
+            COLORS.text = 'text-dark';
+            break;
+    }
+
+    return COLORS;
+}
+
 function vsckb_get_card_count() {
     let count = 0;
     vsckb_foreach_card(() => {
@@ -55,9 +78,7 @@ function vsckb_get_card_count() {
     return count;
 }
 
-function vsckb_get_card_description(item) {
-    let desc = item.description;
-
+function vsckb_get_card_description(desc) {
     if (!vsckb_is_nil(desc)) {
         if ('object' !== typeof desc) {
             desc = {
@@ -82,6 +103,23 @@ function vsckb_get_card_description(item) {
     }
 
     return desc;
+}
+
+function vsckb_get_card_description_markdown(field) {
+    let description = vsckb_to_string(
+        field.val()
+    );
+
+    if ('' === description.trim()) {
+        description = undefined;
+    } else {
+        description = {
+            content: description,
+            mime: 'text/markdown'
+        };
+    }
+
+    return description;
 }
 
 function vsckb_get_card_prio_sort_val(item) {
@@ -221,10 +259,9 @@ function vsckb_refresh_card_view(onAdded) {
         vsckb_get_cards_sorted(TYPE).forEach((i) => {
             let itemSetup = false;
 
-            const ID = ++nextKanbanCardId;
+            ++nextKanbanCardId;
 
             const CARD_TYPE = TYPE;
-            const CARD_LIST = allCards[CARD_TYPE];
 
             const NEW_ITEM = jQuery('<div class="vsckb-kanban-card border border-dark">' +
                                     '<div class="vsckb-kanban-card-col vsckb-kanban-card-type font-weight-bold" />' + 
@@ -252,27 +289,10 @@ function vsckb_refresh_card_view(onAdded) {
 
             NEW_ITEM.find('.vsckb-kanban-card-info');
 
-            let newItemTypeBgColor = 'bg-info';
-            let newItemTypeTextColor = 'text-white';
-            {
-                switch (vsckb_normalize_str(i.type)) {
-                    case 'bug':
-                        newItemTypeBgColor = 'bg-dark';
-                        break;
-    
-                    case 'emergency':
-                        newItemTypeBgColor = 'bg-danger';
-                        break;
-    
-                    default:
-                        newItemTypeTextColor = 'text-dark';
-                        break;
-                }
-
-                NEW_ITEM.find('.vsckb-kanban-card-type')
-                        .addClass( newItemTypeBgColor )
-                        .addClass( newItemTypeTextColor );
-            }
+            const NEW_ITEM_COLORS = vsckb_get_card_colors_by_type( i.type );
+            NEW_ITEM.find('.vsckb-kanban-card-type')
+                    .addClass( NEW_ITEM_COLORS.background )
+                    .addClass( NEW_ITEM_COLORS.text );
 
             // track time button
             if (canTrackTime) {
@@ -301,18 +321,15 @@ function vsckb_refresh_card_view(onAdded) {
             }
 
             // edit button
-            {
-                const EDIT_BTN = jQuery('<a class="btn btn-sm" title="Edit Card">' + 
-                                        '<i class="fa fa-pencil-square-o" aria-hidden="true"></i>' + 
-                                        '</a>');
+            const EDIT_BTN = jQuery('<a class="btn btn-sm" title="Edit Card">' + 
+                                    '<i class="fa fa-pencil-square-o" aria-hidden="true"></i>' + 
+                                    '</a>');
 
+            {
                 EDIT_BTN.on('click', function() {
                     const WIN = jQuery('#vsckb-edit-card-modal');
                     const WIN_BODY = WIN.find('.modal-body');
-                    const WIN_FOOTER = WIN.find('.modal-footer');
                     const WIN_HEADER = WIN.find('.modal-header');
-                    const WIN_CLOSE_BTN = WIN_HEADER.find('button.close');
-                    const WIN_TITLE = WIN_HEADER.find('.modal-title');
 
                     let user;
                     if (i.assignedTo) {
@@ -322,14 +339,52 @@ function vsckb_refresh_card_view(onAdded) {
                     const TITLE_FIELD = WIN_BODY.find('#vsckb-edit-card-title');
                     TITLE_FIELD.val( vsckb_to_string(i.title) );
 
+                    let descriptionOverflow = '';
+
                     const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
                     {
-                        const DESC = vsckb_get_card_description(i);
+                        let descriptionToSet = '';
+
+                        const DESC = vsckb_get_card_description( i.description );
                         if (DESC) {
-                            DESCRIPTION_FIELD.val(vsckb_to_string(
+                            descriptionToSet = vsckb_to_string(
                                 DESC.content
-                            ));
+                            );
                         }
+
+                        if (descriptionToSet.length > 255) {
+                            descriptionToSet = descriptionToSet.substr(0, 255);
+                            descriptionOverflow = descriptionToSet.substr(255);
+                        }
+
+                        DESCRIPTION_FIELD.val( descriptionToSet );
+                    }
+
+                    if ('' === descriptionOverflow.trim()) {
+                        descriptionOverflow = '';
+                    }
+
+                    const DETAILS_FIELD = WIN.find('#vsckb-edit-card-details');
+                    {
+                        let detailsToSet = '';
+
+                        const DETAILS = vsckb_get_card_description( i.details );
+                        if (DETAILS) {
+                            detailsToSet = vsckb_to_string(
+                                DETAILS.content
+                            );
+                        }
+
+                        if ('' === detailsToSet.trim()) {
+                            detailsToSet = '';
+                        }
+    
+                        let sep = '';
+                        if (descriptionOverflow.length > 0 && detailsToSet.length > 0) {
+                            sep = "\n\n";
+                        }
+
+                        DETAILS_FIELD.val( descriptionOverflow + sep + detailsToSet );
                     }
 
                     const TYPE_FIELD = WIN.find('#vsckb-edit-card-type');
@@ -363,18 +418,6 @@ function vsckb_refresh_card_view(onAdded) {
                             return;
                         }
                         
-                        let description = vsckb_to_string(
-                            DESCRIPTION_FIELD.val()
-                        );
-                        if ('' === description.trim()) {
-                            description = undefined;
-                        } else {
-                            description = {
-                                content: description,
-                                mime: 'text/markdown'
-                            };
-                        }
-
                         let type = vsckb_normalize_str( TYPE_FIELD.val() );
                         if ('' === type) {
                             type = undefined;
@@ -387,7 +430,8 @@ function vsckb_refresh_card_view(onAdded) {
 
                         i.assignedTo = vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD);
                         i.title = TITLE;
-                        i.description = description;
+                        i.description = vsckb_get_card_description_markdown( DESCRIPTION_FIELD );
+                        i.details = vsckb_get_card_description_markdown( DETAILS_FIELD );
                         i.prio = PRIO;
                         i.type = type;
                         i.category = category;
@@ -423,11 +467,10 @@ function vsckb_refresh_card_view(onAdded) {
             }
 
             // delete button
+            const DELETE_BTN = jQuery('<a class="btn btn-sm" title="Delete Card">' + 
+                                      '<i class="fa fa-trash" aria-hidden="true"></i>' + 
+                                      '</a>');
             {
-                const DELETE_BTN = jQuery('<a class="btn btn-sm" title="Delete Card">' + 
-                                          '<i class="fa fa-trash" aria-hidden="true"></i>' + 
-                                          '</a>');
-
                 DELETE_BTN.on('click', function() {
                     const WIN = jQuery('#vsckb-delete-card-modal');
 
@@ -482,74 +525,91 @@ function vsckb_refresh_card_view(onAdded) {
                 NEW_ITEM_CATEGORY.show();
             }
 
-            const DESC = vsckb_get_card_description(i);
-            if (!vsckb_is_nil(DESC)) {
-                const DESC_CONTENT = vsckb_to_string(DESC.content).trim();
-                if ('' !== DESC_CONTENT) {
-                    let html;
+            const APPEND_CARD_CONTENT = (cardContentObj, target, ifAppended) => {
+                cardContentObj = vsckb_get_card_description( cardContentObj );
+                if (cardContentObj) {
+                    const CARD_CONTENT = vsckb_to_string( cardContentObj.content );
+                    if ('' !== CARD_CONTENT.trim()) {
+                        let html;
 
-                    switch (vsckb_normalize_str(DESC.mime)) {
-                        case 'text/markdown':
-                            html = vsckb_from_markdown(
-                                DESC_CONTENT
-                            );
-                            break;
+                        switch (vsckb_normalize_str(cardContentObj.mime)) {
+                            case 'text/markdown':
+                                html = vsckb_from_markdown(
+                                    CARD_CONTENT
+                                );
+                                break;
 
-                        default:
-                            html = vsckb_to_string(
-                                jQuery('<span />').text(DESC_CONTENT)
-                                                  .html()
-                            ).trim()
-                             .split('\n').join('<br />');
-                            break;
-                    }
+                            default:
+                                html = vsckb_to_string(
+                                    jQuery('<span />').text(CARD_CONTENT)
+                                                      .html()
+                                ).trim()
+                                 .split('\n').join('<br />');
+                                break;
+                        }
 
-                    if (false !== html) {
-                        NEW_ITEM_INFO_BODY.append(
-                            html
-                        ).show();
+                        if (target) {
+                            target.append(
+                                html
+                            );    
+                        }
 
-                        itemSetup = () => {
-                            vsckb_apply_highlight(
-                                NEW_ITEM_INFO_BODY
-                            );
-
-                            // task items
-                            const ALL_TASK_ITEMS = jQuery('ul.vsckb-task-list li.task-list-item input[type="checkbox"]');
-                            if (ALL_TASK_ITEMS.length > 0) {
-                                let checkItems = 0;
-                                ALL_TASK_ITEMS.each(function() {
-                                    const TASK_ITEM = jQuery(this);
-
-                                    if (TASK_ITEM.prop('checked')) {
-                                        ++checkItems;
-                                    }
-                                });
-
-                                if (checkItems > 0) {
-                                    const PERCENTAGE = checkItems / ALL_TASK_ITEMS.length * 100.0;
-
-                                    const NEW_ITEM_PROGRESS_BAR = jQuery('<div class="vsckb-kanban-card-progress-bar" />');
-                                    NEW_ITEM_PROGRESS_BAR.css('width', Math.floor(PERCENTAGE) + '%');
-
-                                    if (PERCENTAGE < 50.0) {
-                                        NEW_ITEM_PROGRESS_BAR.addClass('bg-danger');
-                                    } else if (PERCENTAGE < 100.0) {
-                                        NEW_ITEM_PROGRESS_BAR.addClass('bg-warning');
-                                    } else {
-                                        NEW_ITEM_PROGRESS_BAR.addClass('bg-success');
-                                    }
-
-                                    NEW_ITEM_PROGRESS_BAR.appendTo( NEW_ITEM_PROGRESS );
-
-                                    NEW_ITEM_PROGRESS.attr('title', `${ PERCENTAGE.toFixed(1) } %`);
-                                    NEW_ITEM_PROGRESS.show();
-                                }
-                            }
-                        };
+                        if (ifAppended) {
+                            ifAppended( html );
+                        }
                     }
                 }
-            }
+            };
+
+            APPEND_CARD_CONTENT(
+                i.description, NEW_ITEM_INFO_BODY,
+                () => {
+                    itemSetup = () => {
+                        vsckb_apply_highlight(
+                            NEW_ITEM_INFO_BODY
+                        );  
+                    };
+                }
+            );
+
+            APPEND_CARD_CONTENT(
+                i.details, null,
+                (html) => {
+                    NEW_ITEM_INFO_BODY.on('click', function() {
+                        const WIN = jQuery('#vsckb-card-details-modal');
+
+                        // bg-warning
+                        const WIN_HEADER = WIN.find('.modal-header');
+                        WIN_HEADER.attr('class', 'modal-header');
+
+                        const WIN_HEADER_COLORS = vsckb_get_card_colors_by_type( i.type );
+                        WIN_HEADER.addClass( WIN_HEADER_COLORS.background )
+                                  .addClass( WIN_HEADER_COLORS.text );
+
+                        const WIN_HEADER_TITLE = WIN_HEADER.find('.modal-title');
+                        WIN_HEADER_TITLE.text( vsckb_to_string(i.title) );
+
+                        const WIN_BODY = WIN.find('.modal-body');
+                        WIN_BODY.html('');
+
+                        WIN_BODY.append( html );
+                        vsckb_apply_highlight( WIN_BODY );
+
+                        WIN.find('.modal-footer .vsckb-edit-btn').off('click').on('click', () => {
+                            WIN.modal('hide');
+
+                            jQuery('#vsckb-edit-card-modal').attr('vsckb-select-pane', 
+                                                                  'vsckb-edit-card-details-tab-pane');
+                            EDIT_BTN.trigger('click');
+                        });
+
+                        WIN.modal('show');
+                    });
+
+                    NEW_ITEM_INFO_BODY.addClass( 'vsckb-has-card-details' );
+                    NEW_ITEM_INFO_BODY.attr('title', 'Click here to view details ...');
+                }
+            );
 
             const UPDATE_BORDER = (borderClass, borderWidth) => {
                 NEW_ITEM.removeClass('border-dark')
@@ -569,6 +629,58 @@ function vsckb_refresh_card_view(onAdded) {
 
             if (false !== itemSetup) {
                 itemSetup();
+            }
+
+            // progress bar5
+            {
+                const TEMP = jQuery('<span>' + 
+                                    '<div class="vsckb-description" />' + 
+                                    '<div class="vsckb-details" />' + 
+                                    '</span>');
+                const TEMP_DESCRIPTION = TEMP.find('.vsckb-description');
+                const TEMP_DETAILS = TEMP.find('.vsckb-details');
+
+                APPEND_CARD_CONTENT(i.description, TEMP_DESCRIPTION, () => {
+                    vsckb_apply_highlight( TEMP_DESCRIPTION );
+                });
+                APPEND_CARD_CONTENT(i.details, TEMP_DETAILS, () => {
+                    vsckb_apply_highlight( TEMP_DETAILS );
+                });
+
+                // task items
+                const ALL_TASK_ITEMS = TEMP.find('ul.vsckb-task-list li.task-list-item input[type="checkbox"]');
+                if (ALL_TASK_ITEMS.length > 0) {
+                    let checkItems = 0;
+                    ALL_TASK_ITEMS.each(function() {
+                        const TASK_ITEM = jQuery(this);
+
+                        if (TASK_ITEM.prop('checked')) {
+                            ++checkItems;
+                        }
+                    });
+
+                    if (checkItems > 0) {
+                        const PERCENTAGE = checkItems / ALL_TASK_ITEMS.length * 100.0;
+
+                        const NEW_ITEM_PROGRESS_BAR = jQuery('<div class="vsckb-kanban-card-progress-bar" />');
+                        NEW_ITEM_PROGRESS_BAR.css('width', Math.floor(PERCENTAGE) + '%');
+
+                        if (PERCENTAGE < 50.0) {
+                            NEW_ITEM_PROGRESS_BAR.addClass('bg-danger');
+                        } else if (PERCENTAGE < 100.0) {
+                            NEW_ITEM_PROGRESS_BAR.addClass('bg-warning');
+                        } else {
+                            NEW_ITEM_PROGRESS_BAR.addClass('bg-success');
+                        }
+
+                        NEW_ITEM_PROGRESS_BAR.appendTo( NEW_ITEM_PROGRESS );
+
+                        NEW_ITEM_PROGRESS.attr('title', `${ PERCENTAGE.toFixed(1) } %`);
+                        NEW_ITEM_PROGRESS.show();
+                    }
+                }
+
+                TEMP.remove();
             }
 
             if (onAdded) {
@@ -673,9 +785,6 @@ function vsckb_update_card_item_footer(item, entry) {
     const CARD = item.parents('.vsckb-card');
     const CARD_ID = CARD.attr('id');
     const CARD_TYPE = CARD_ID.substr(11);
-    const CARD_BODY = CARD.find('.vsckb-primary-card-body');
-
-    const CARD_LIST = allCards[CARD_TYPE];
 
     const ITEM_FOOTER = item.find('.vsckb-kanban-card-footer');
     const ITEM_FOOTER_BUTTONS = ITEM_FOOTER.find('.vsckb-buttons');
@@ -909,6 +1018,8 @@ jQuery(() => {
     });
 
     WIN.on('shown.bs.modal', function (e) {
+        jQuery('a[href="#vsckb-new-card-description-tab-pane"]').tab('show');
+
         TITLE_FIELD.focus();
     });
 });
@@ -916,10 +1027,22 @@ jQuery(() => {
 jQuery(() => {
     const WIN = jQuery('#vsckb-edit-card-modal');
     
-    const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
-
     WIN.on('shown.bs.modal', function (e) {
-        DESCRIPTION_FIELD.focus();
+        let paneToSelect = vsckb_to_string(
+            WIN.attr('vsckb-select-pane')
+        ).trim();
+        
+        WIN.removeAttr('vsckb-select-pane');
+
+        if ('' === paneToSelect) {
+            paneToSelect = 'vsckb-edit-card-description-tab-pane';
+        }
+
+        const TAB_PANE = jQuery('#' + paneToSelect);
+
+        jQuery(`a[href="#${ TAB_PANE.attr('id') }"]`).tab('show');
+
+        TAB_PANE.find('textarea').focus();
     });
 });
 
@@ -935,7 +1058,6 @@ jQuery(() => {
         const WIN_BODY = WIN.find('.modal-body');
         const WIN_FOOTER = WIN.find('.modal-footer');
         const WIN_HEADER = WIN.find('.modal-header');
-        const WIN_CLOSE_BTN = WIN_HEADER.find('button.close');
         const WIN_TITLE = WIN_HEADER.find('.modal-title');
 
         const TITLE_FIELD = WIN_BODY.find('#vsckb-new-card-title');
@@ -943,6 +1065,9 @@ jQuery(() => {
 
         const DESCRIPTION_FIELD = WIN.find('#vsckb-new-card-description');
         DESCRIPTION_FIELD.val('');
+        
+        const DETAILS_FIELD = WIN.find('#vsckb-new-card-details');
+        DETAILS_FIELD.val('');
 
         const TYPE_FIELD = WIN.find('#vsckb-new-card-type');
 
@@ -976,18 +1101,6 @@ jQuery(() => {
                 PRIO_FIELD.focus();
                 return;
             }
-            
-            let description = vsckb_to_string(
-                DESCRIPTION_FIELD.val()
-            );
-            if ('' === description.trim()) {
-                description = undefined;
-            } else {
-                description = {
-                    content: description,
-                    mime: 'text/markdown'
-                };
-            }
 
             let type = vsckb_normalize_str( TYPE_FIELD.val() );
             if ('' === type) {
@@ -1000,10 +1113,11 @@ jQuery(() => {
             }
 
             const NEW_CARD = {
-                assignedTo: vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD),
+                assignedTo: vsckb_get_assigned_to_val( ASSIGNED_TO_FIELD ),
                 category: category,
                 creation_time: moment.utc().toISOString(),
-                description: description,
+                description: vsckb_get_card_description_markdown( DESCRIPTION_FIELD ),
+                details: vsckb_get_card_description_markdown( DETAILS_FIELD ),
                 prio: PRIO,
                 title: TITLE,
                 type: type

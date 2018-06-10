@@ -70,10 +70,11 @@ export interface BoardCard {
     /**
      * The (optional) description (data).
      */
-    description?: string | {
-        content?: string;
-        mime?: string;
-    };
+    description?: BoardCardContentValue;
+    /**
+     * The (optional) detail (data).
+     */
+    details?: BoardCardContentValue;
     /**
      * The priority.
      */
@@ -91,6 +92,25 @@ export interface BoardCard {
      */
     type?: string;
 }
+
+/**
+ * Data of a "board card content".
+ */
+export interface BoardCardContent {
+    /**
+     * The content.
+     */
+    content?: string;
+    /**
+     * The MIME type.
+     */
+    mime?: string;
+}
+
+/**
+ * Possible values for a "board card content".
+ */
+export type BoardCardContentValue = string | BoardCardContent;
 
 /**
  * Board settings.
@@ -450,9 +470,32 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         <input type="text" class="form-control" id="vsckb-new-card-assigned-to">
                     </div>
 
-                    <div class="form-group">
-                        <label for="vsckb-new-card-description">Description</label>
-                        <textarea class="form-control" id="vsckb-new-card-description" rows="7"></textarea>
+                    <div class="row">
+                        <div class="col col-12">
+                            <ul class="nav nav-pills vsckb-card-description-details-tablist" id="vsckb-new-card-description-details-tablist" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="vsckb-new-card-description-tab" data-toggle="pill" href="#vsckb-new-card-description-tab-pane" role="tab" aria-controls="vsckb-new-card-description-tab-pane" aria-selected="true">
+                                        (Short) Description
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" id="vsckb-new-card-details-tab" data-toggle="pill" href="#vsckb-new-card-details-tab-pane" role="tab" aria-controls="vsckb-new-card-details-tab-pane" aria-selected="false">
+                                        Details
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content vsckb-card-description-details-tab-content" id="vsckb-new-card-description-details-tab-content">
+                                <div class="tab-pane form-group show active" id="vsckb-new-card-description-tab-pane" role="tabpanel" aria-labelledby="vsckb-new-card-description-tab">
+                                    <textarea class="form-control" id="vsckb-new-card-description" rows="5"></textarea>
+                                </div>
+
+                                <div class="tab-pane form-group" id="vsckb-new-card-details-tab-pane" role="tabpanel" aria-labelledby="vsckb-new-card-details-tab">
+                                    <textarea class="form-control" id="vsckb-new-card-details" rows="7"></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -538,9 +581,32 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         <input type="text" class="form-control" id="vsckb-edit-card-assigned-to">
                     </div>
 
-                    <div class="form-group">
-                        <label for="vsckb-edit-card-description">Description</label>
-                        <textarea class="form-control" id="vsckb-edit-card-description" rows="7"></textarea>
+                    <div class="row">
+                        <div class="col col-12">
+                            <ul class="nav nav-pills vsckb-card-description-details-tablist" id="vsckb-edit-card-description-details-tablist" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="vsckb-edit-card-description-tab" data-toggle="pill" href="#vsckb-edit-card-description-tab-pane" role="tab" aria-controls="vsckb-edit-card-description-tab-pane" aria-selected="true">
+                                        (Short) Description
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" id="vsckb-edit-card-details-tab" data-toggle="pill" href="#vsckb-edit-card-details-tab-pane" role="tab" aria-controls="vsckb-edit-card-details-tab-pane" aria-selected="false">
+                                        Details
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content vsckb-card-description-details-tab-content" id="vsckb-edit-card-description-details-tab-content">
+                                <div class="tab-pane form-group show active" id="vsckb-edit-card-description-tab-pane" role="tabpanel" aria-labelledby="vsckb-edit-card-description-tab">
+                                    <textarea class="form-control" id="vsckb-edit-card-description" rows="5" maxlength="255"></textarea>
+                                </div>
+
+                                <div class="tab-pane form-group" id="vsckb-edit-card-details-tab-pane" role="tabpanel" aria-labelledby="vsckb-edit-card-details-tab">
+                                    <textarea class="form-control" id="vsckb-edit-card-details" rows="7"></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -578,6 +644,30 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
                 <a class="btn btn-danger text-white vsckb-yes-btn">
                     <span>Yes</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" role="dialog" id="vsckb-card-details-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"></h5>
+
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body"></div>
+
+            <div class="modal-footer">
+                <a class="btn btn-primary vsckb-edit-btn text-white">
+                    <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+
+                    <span>Edit</span>
                 </a>
             </div>
         </div>
@@ -940,6 +1030,61 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
 
         if (_.isNil(loadedBoard)) {
             loadedBoard = newBoard();
+        }
+
+        loadedBoard = vscode_helpers.cloneObject( loadedBoard );
+        {
+            const CARD_COLMNS = [
+                'todo',
+                'in-progress',
+                'testing',
+                'done',
+            ];
+
+            const SET_CARD_CONTENT = (card: BoardCard, property: PropertyKey) => {
+                let cardContentValue: BoardCardContentValue = card[ property ];
+
+                let cardContent: BoardCardContent;
+                if (!_.isNil(cardContentValue)) {
+                    if (_.isObject(cardContentValue)) {
+                        cardContent = <BoardCardContent>cardContentValue;
+                    } else {
+                        cardContent = {
+                            content: vscode_helpers.toStringSafe(cardContentValue),
+                            mime: 'text/plain',
+                        };
+                    }
+
+                    if (vscode_helpers.isEmptyString(cardContent.content)) {
+                        cardContent = undefined;
+                    }
+                }
+
+                if (!_.isNil(cardContent)) {
+                    const MIME = vscode_helpers.normalizeString(cardContent.mime);
+                    switch (MIME) {
+                        case 'text/markdown':
+                            cardContent.mime = MIME;
+                            break;
+
+                        default:
+                            cardContent.mime = 'text/plain';
+                            break;
+                    }
+                }
+
+                card[ property ] = cardContent;
+            };
+
+            for (const CC of CARD_COLMNS) {
+                const CARDS: BoardCard[] = loadedBoard[ CC ]
+                                         = vscode_helpers.asArray( loadedBoard[ CC ] );
+
+                for (const C of CARDS) {
+                    SET_CARD_CONTENT(C, 'description');
+                    SET_CARD_CONTENT(C, 'details');
+                }
+            }
         }
 
         await this.postMessage('setBoard', {
