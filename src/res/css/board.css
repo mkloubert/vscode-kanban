@@ -102,6 +102,10 @@ body main .row .col .vsckb-card .card-body {
     display: block;
 }
 
-#vsckb-reload-board-btn {
+#vsckb-additional-header-btns {
     margin-right: 16px;
+}
+
+#vsckb-additional-header-btns .btn {
+    margin-left: 4px;
 }

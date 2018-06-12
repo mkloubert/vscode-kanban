@@ -1267,6 +1267,10 @@ jQuery(() => {
     jQuery('#vsckb-reload-board-btn').on('click', function() {
         vsckb_reload_board();
     });
+
+    jQuery('#vsckb-save-board-btn').on('click', function() {
+        vsckb_save_board();
+    });
 });
 
 jQuery(() => {

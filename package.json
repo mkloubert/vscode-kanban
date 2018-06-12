@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.12.0",
+    "version": "1.13.0",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -36,6 +36,26 @@
                     "type": "object",
                     "scope": "resource",
                     "properties": {
+                        "cleanupExports": {
+                            "description": "Remove existing export files, before regenerate them.",
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "exportOnSave": {
+                            "description": "Export cards to external Markdown files on save or not.",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "exportPath": {
+                            "description": "The custom path where export files, like cards, should be stored. Relative paths will be mapped to the '.vscode' subfolder of the underlying workspace.",
+                            "type": "string"
+                        },
+                        "maxExportNameLength": {
+                            "description": "The maximum size of the name of an export file.",
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 48
+                        },
                         "globals": {
                             "description": "Any data, which can be accessed inside the whole extension context, like scripts, e.g."
                         },
@@ -149,6 +169,7 @@
         "@types/marked": "^0.3.0",
         "@types/mocha": "^2.2.42",
         "@types/node": "^7.0.43",
+        "@types/sanitize-filename": "^1.1.28",
         "tslint": "^5.8.0",
         "typescript": "2.8.3",
         "vscode": "^1.1.6"
@@ -159,6 +180,7 @@
         "humanize-duration": "^3.14.0",
         "lodash": "^4.17.10",
         "marked": "^0.4.0",
+        "sanitize-filename": "^1.6.1",
         "vscode-helpers": "^2.6.2"
     }
 }

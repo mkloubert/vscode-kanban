@@ -19,6 +19,7 @@ import * as _ from 'lodash';
 import * as FSExtra from 'fs-extra';
 import * as OS from 'os';
 import * as Path from 'path';
+import * as URL from 'url';
 import * as vsckb from './extension';
 import * as vsckb_html from './html';
 import * as vscode from 'vscode';
@@ -316,6 +317,16 @@ export interface TrackTimeEventData extends EventDataWithUniqueId {
 
 interface WebViewMessage extends vsckb.WebViewMessage {
 }
+
+/**
+ * List of board card columns.
+ */
+export const BOARD_COLMNS: ReadonlyArray<string> = [
+    'todo',
+    'in-progress',
+    'testing',
+    'done',
+];
 
 const KNOWN_URLS = {
     'github': 'https://github.com/mkloubert/vscode-kanban',
@@ -680,9 +691,15 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
             },
             getHeaderButtons: () => {
                 return `
-<a class="btn btn-primary btn-sm text-white" id="vsckb-reload-board-btn" title="Reload Board">
-    <i class="fa fa-refresh" aria-hidden="true"></i>
-</a>
+<div id="vsckb-additional-header-btns">
+    <a class="btn btn-primary btn-sm text-white" id="vsckb-reload-board-btn" title="Reload Board">
+        <i class="fa fa-refresh" aria-hidden="true"></i>
+    </a>
+
+    <a class="btn btn-secondary btn-sm text-dark" id="vsckb-save-board-btn" title="Save Board">
+        <i class="fa fa-floppy-o" aria-hidden="true"></i>
+    </a>
+</div>
 `;
             },
             getResourceUri: GET_RES_URI,
@@ -887,6 +904,47 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
                             };
                             break;
 
+                        case 'openExternalUrl':
+                            {
+                                const URL_TO_OPEN = vscode_helpers.toStringSafe(msg.data.url);
+                                const URL_TEXT = vscode_helpers.toStringSafe(msg.data.text).trim();
+
+                                if (!vscode_helpers.isEmptyString(URL_TO_OPEN)) {
+                                    action = async() => {
+                                        // check if "parsable"
+                                        URL.parse( URL_TO_OPEN );
+
+                                        let urlPromptText: string;
+                                        if ('' === URL_TEXT) {
+                                            urlPromptText = `'${ URL_TO_OPEN }'`;
+                                        } else {
+                                            urlPromptText = `'${ URL_TEXT }' (${ URL_TO_OPEN })`;
+                                        }
+
+                                        const SELECTED_ITEM = await vscode.window.showWarningMessage<vsckb.ActionMessageItem>(
+                                            `Do you really want to open the URL ${ urlPromptText }?`,
+                                            {
+                                                title: 'Yes',
+                                                action: async () => {
+                                                    await vsckb.open(URL_TO_OPEN);
+                                                }
+                                            },
+                                            {
+                                                title: 'No',
+                                                isCloseAffordance: true
+                                            }
+                                        );
+
+                                        if (SELECTED_ITEM) {
+                                            if (SELECTED_ITEM.action) {
+                                                await SELECTED_ITEM.action();
+                                            }
+                                        }
+                                    };
+                                }
+                            }
+                            break;
+
                         case 'openKnownUrl':
                             const KU = KNOWN_URLS[ vscode_helpers.normalizeString(msg.data) ];
                             if (!_.isNil(KU)) {
@@ -1034,13 +1092,6 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
 
         loadedBoard = vscode_helpers.cloneObject( loadedBoard );
         {
-            const CARD_COLMNS = [
-                'todo',
-                'in-progress',
-                'testing',
-                'done',
-            ];
-
             const SET_CARD_CONTENT = (card: BoardCard, property: PropertyKey) => {
                 let cardContentValue: BoardCardContentValue = card[ property ];
 
@@ -1076,9 +1127,9 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
                 card[ property ] = cardContent;
             };
 
-            for (const CC of CARD_COLMNS) {
-                const CARDS: BoardCard[] = loadedBoard[ CC ]
-                                         = vscode_helpers.asArray( loadedBoard[ CC ] );
+            for (const BC of BOARD_COLMNS) {
+                const CARDS: BoardCard[] = loadedBoard[ BC ]
+                                         = vscode_helpers.asArray( loadedBoard[ BC ] );
 
                 for (const C of CARDS) {
                     SET_CARD_CONTENT(C, 'description');

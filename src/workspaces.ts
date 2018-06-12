@@ -17,9 +17,11 @@
 
 import * as _ from 'lodash';
 import * as FSExtra from 'fs-extra';
+import * as HtmlEntities from 'html-entities';
 const HumanizeDuration = require('humanize-duration');
 import * as Moment from 'moment';
 import * as Path from 'path';
+import * as SanitizeFilename from 'sanitize-filename';
 import * as vsckb from './extension';
 import * as vsckb_boards from './boards';
 import * as vsckb_toggl from './toggl';
@@ -46,9 +48,25 @@ export interface CanSetCardTag {
  */
 export interface Config extends vscode.WorkspaceConfiguration {
     /**
+     * Remove existing export files, before regenerate them.
+     */
+    readonly cleanupExports?: boolean;
+    /**
+     * Export cards to external Markdown files on save or not.
+     */
+    readonly exportOnSave?: boolean;
+    /**
+     * The custom path where export files, like cards, should be stored.
+     */
+    readonly exportPath?: string;
+    /**
      * Any data, which can be accessed inside the whole extension context, like scripts, e.g.
      */
     readonly globals?: any;
+    /**
+     * The maximum size of the name of an export file.
+     */
+    readonly maxExportNameLength?: number;
     /**
      * Do not detect username via source control manager.
      */
@@ -151,6 +169,13 @@ export interface EventScriptFunctionArguments {
     session: any;
 }
 
+interface ExportBoardCardsToOptions {
+    board: vsckb_boards.Board;
+    cleanup: boolean;
+    dir: string;
+    maxNameLength: number;
+}
+
 /**
  * An object that contains a 'tag' property.
  */
@@ -192,6 +217,7 @@ export type TimeTrackingSettingValue = boolean | TimeTrackingSettings;
 export type TrackTimeEventArguments = EventScriptFunctionArguments & CanSetCardTag & HasTag;
 
 const BOARD_FILENAME = 'vscode-kanban.json';
+const BOARD_CARD_EXPORT_FILE_EXT = 'card.md';
 const EVENT_TRACK_TIME = 'track_time';
 const SCRIPT_FILENAME = 'vscode-kanban.js';
 
@@ -363,10 +389,51 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                 await this.raiseEvent(ctx);
             },
             saveBoard: async (board) => {
-                await saveBoardTo(
-                    board,
-                    this.boardFile.fsPath
-                );
+                // save board
+                try {
+                    await saveBoardTo(
+                        board,
+                        this.boardFile.fsPath,
+                    );
+                } catch (e) {
+                    vsckb.showError(e);
+                }
+
+                if (vscode_helpers.toBooleanSafe(CFG.exportOnSave)) {
+                    try {
+                        const VSCODE_DIR = Path.join(this.folder.uri.fsPath, '.vscode');
+
+                        let exportPath = vscode_helpers.toStringSafe(CFG.exportPath);
+                        if (vscode_helpers.isEmptyString(exportPath)) {
+                            exportPath = VSCODE_DIR;
+                        }
+                        if (!Path.isAbsolute(exportPath)) {
+                            exportPath = Path.join(
+                                VSCODE_DIR, exportPath
+                            );
+                        }
+                        exportPath = Path.resolve( exportPath );
+
+                        let maxNameLength = parseInt(
+                            vscode_helpers.toStringSafe(CFG.maxExportNameLength).trim()
+                        );
+                        if (isNaN(maxNameLength)) {
+                            maxNameLength = 0;
+                        }
+                        if (maxNameLength < 1) {
+                            maxNameLength = 48;
+                        }
+
+                        await exportBoardCardsTo({
+                            board: board,
+                            cleanup: vscode_helpers.toBooleanSafe(CFG.cleanupExports, true),
+                            dir: exportPath,
+                            maxNameLength: maxNameLength,
+                        });
+                    } catch (e) {
+                        vsckb.showError(e);
+                    }
+                }
             },
             settings: {
                 canTrackTime: this.canTrackTime,
@@ -645,6 +712,173 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
         return vscode_helpers.tryCreateGitClient(
             this.folder.uri.fsPath
         );
+    }
+}
+
+async function exportBoardCardsTo(opts: ExportBoardCardsToOptions) {
+    let board = opts.board;
+    if (_.isNil(board)) {
+        board = vsckb_boards.newBoard();
+    }
+
+    let dir = opts.dir;
+    await vscode_helpers.createDirectoryIfNeeded(dir);
+
+    const HTML_ENCODER = new HtmlEntities.AllHtmlEntities();
+
+    const FILENAME_FORMAT = 'vscode-kanban_{0}_{1}_{2}';
+
+    if (opts.cleanup) {
+        const EXITING_FILES = (await vscode_helpers.glob('/vscode-kanban_*.' + BOARD_CARD_EXPORT_FILE_EXT, {
+            absolute: true,
+            cwd: dir,
+            dot: false,
+            nocase: true,
+            nodir: true,
+            nonull: false,
+            nosort: true,
+            nounique: false,
+            root: dir,
+        }));
+
+        for (const EF of EXITING_FILES) {
+            await FSExtra.unlink( EF );
+        }
+    }
+
+    const EXTRACT_BOARD_CARD_CONTENT = (value: vsckb_boards.BoardCardContentValue) => {
+        let content: string;
+
+        if (!_.isNil(value)) {
+            let cardContent: vsckb_boards.BoardCardContent;
+            if (_.isObject(value)) {
+                cardContent = <vsckb_boards.BoardCardContent>value;
+            } else {
+                cardContent = {
+                    content: vscode_helpers.toStringSafe(value),
+                };
+            }
+
+            content = vscode_helpers.toStringSafe( cardContent.content );
+        }
+
+        return content;
+    };
+
+    let index = 0;
+    for (const BC of vsckb_boards.BOARD_COLMNS) {
+        const CARDS: vsckb_boards.BoardCard[] = vscode_helpers.asArray( board[ BC ] );
+
+        let columnIndex = 0;
+        for (const C of CARDS) {
+            ++index;
+            ++columnIndex;
+
+            const DESCRIPTION = EXTRACT_BOARD_CARD_CONTENT(C.description);
+            const DETAILS = EXTRACT_BOARD_CARD_CONTENT(C.details);
+
+            let filename = vscode_helpers.format(
+                FILENAME_FORMAT,
+                BC, // {0}
+                columnIndex,  // {1}
+                vscode_helpers.toStringSafe(C.title).trim(),  // {2}
+            ).trim();
+
+            filename = SanitizeFilename(filename).trim();
+
+            if (filename.length > opts.maxNameLength) {
+                filename = filename.substr(0, opts.maxNameLength);
+            }
+
+            let outputFile: string;
+            let filenameSuffix: number;
+            do {
+                outputFile = filename;
+
+                if (!isNaN(filenameSuffix)) {
+                    --filenameSuffix;
+
+                    outputFile += filenameSuffix;
+                } else {
+                    filenameSuffix = 0;
+                }
+
+                outputFile = Path.join(
+                    dir,
+                    outputFile + '.' + BOARD_CARD_EXPORT_FILE_EXT,
+                );
+
+                if (!(await vscode_helpers.exists(outputFile))) {
+                    break;
+                }
+            } while (true);
+
+            let type = vscode_helpers.normalizeString(C.type);
+            if ('' === type) {
+                type = 'note';
+            }
+
+            const META: any = {
+                'Column': BC,
+                'Type': type,
+            };
+
+            let category = vscode_helpers.toStringSafe(C.category).trim();
+            if ('' !== category) {
+                META['Category'] = category;
+            }
+
+            let creationTime = vscode_helpers.toStringSafe(C.creation_time).trim();
+            if ('' !== creationTime) {
+                try {
+                    const CT = Moment.utc(creationTime);
+                    if (CT.isValid()) {
+                        META['Creation time'] = CT.format('YYYY-MM-DD HH:mm:ss') + ' (UTC)';
+                    }
+                } catch { }
+            }
+
+            if (!_.isNil(C.assignedTo)) {
+                let assignedTo = vscode_helpers.toStringSafe(C.assignedTo.name).trim();
+                if ('' !== assignedTo) {
+                    META['Assigned to'] = assignedTo;
+                }
+            }
+
+            let md = `# ${ HTML_ENCODER.encode( vscode_helpers.toStringSafe(C.title).trim() ) }
+
+## Meta
+`;
+
+            for (const M of Object.keys(META).sort()) {
+                md += `
+* ${ HTML_ENCODER.encode(M) }: \`${ HTML_ENCODER.encode( META[M] ) }\``;
+            }
+
+            if (!vscode_helpers.isEmptyString(DESCRIPTION)) {
+                md += `
+
+## Description
+
+${ vscode_helpers.toStringSafe(DESCRIPTION) }`;
+            }
+
+            if (!vscode_helpers.isEmptyString(DETAILS)) {
+                md += `
+
+## Details
+
+${ vscode_helpers.toStringSafe(DETAILS) }`;
+            }
+
+            md += `
+
+---
+
+<sup>This document was generated by [Visual Studio Code](https://code.visualstudio.com/) extension [vscode-kanban](https://marketplace.visualstudio.com/items?itemName=mkloubert.vscode-kanban).</sup>`;
+
+            await FSExtra.writeFile(outputFile, md, 'utf8');
+        }
     }
 }
 

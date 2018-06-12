@@ -15,6 +15,13 @@ function vsckb_clone(val) {
     return val;
 }
 
+function vsckb_external_url(url, text) {
+    vsckb_post('openExternalUrl', {
+        text: vsckb_to_string(text),
+        url: vsckb_to_string(url)
+    });
+}
+
 function vsckb_from_markdown(md) {
     const CONVERTER = new showdown.Converter();
 
@@ -77,12 +84,10 @@ function vsckb_from_markdown(md) {
             text = href;
         }
 
-        const NEW_A = jQuery('<span />').text(text)
-                                        .attr('title', href);
-
-        A.replaceWith(
-            NEW_A
-        );
+        A.attr('href', '#');
+        A.on('click', function() {
+            vsckb_external_url(href, text);
+        });
     });
 
     return CONTENT;
