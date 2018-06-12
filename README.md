@@ -67,7 +67,7 @@ Add a `kanban` section:
 | `exportOnSave` | Export cards to external Markdown files on save or not. Default: `(false)` |
 | `exportPath` | The custom path where export files, like cards, should be stored. Relative paths will be mapped to the `.vscode` subfolder of the underlying workspace. Default: `.vscode` subfolder of the underlying workspace. |
 | `globals` | Custom data, which can be used inside the extension, like [event scripts](#handle-events-). |
-| `maxExportNameLength` | The maximum size of the name of an export file. Default: 64 |
+| `maxExportNameLength` | The maximum size of the name of an export file. Default: `48` |
 | `noScmUser` | Do not detect username via source control manager like Git. Default: `(false)` |
 | `noSystemUser` | Do not detect username of operating system. Default: `(false)` |
 | `noTimeTrackingIfIdle` | Do not show 'track time' button, if a card is stored in 'Todo' or 'Done'. Default: `(false)` |
