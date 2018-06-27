@@ -6,6 +6,288 @@ let nextKanbanCardId;
 let vsckb_update_card_interval = false;
 let vsckb_is_updating_card_creation_times = false;
 
+function vsckb_add_card_unique(cards, cardToAdd) {
+    if (vsckb_is_nil(cardToAdd)) {
+        return;
+    }
+
+    if (vsckb_is_nil(cards)) {
+        cards = [];
+    }
+
+    const EXISTS = cards.map(c => c.id)
+                        .indexOf( cardToAdd.id ) > -1;
+    if (!EXISTS) {
+        cards.push( cardToAdd );
+    }
+
+    return cards;
+}
+
+function vsckb_append_card_content(cardContentObj, target, ifAppended) {
+    cardContentObj = vsckb_get_card_description( cardContentObj );
+    if (cardContentObj) {
+        const CARD_CONTENT = vsckb_to_string( cardContentObj.content );
+        if ('' !== CARD_CONTENT.trim()) {
+            let html;
+
+            switch (vsckb_normalize_str(cardContentObj.mime)) {
+                case 'text/markdown':
+                    html = vsckb_from_markdown(
+                        CARD_CONTENT
+                    );
+                    break;
+
+                default:
+                    html = vsckb_to_string(
+                        jQuery('<span />').text(CARD_CONTENT)
+                                          .html()
+                    ).trim()
+                     .split('\n').join('<br />');
+                    break;
+            }
+
+            if (target) {
+                target.append(
+                    html
+                );    
+            }
+
+            if (ifAppended) {
+                ifAppended( html );
+            }
+        }
+    }
+}
+
+function vsckb_edit_card(i, opts) {
+    if (arguments.length < 2) {
+        opts = {};
+    }
+
+    const CARD_TYPE = opts.cardType;
+
+    const WIN = jQuery('#vsckb-edit-card-modal');
+    WIN.modal('hide');
+
+    const WIN_BODY = WIN.find('.modal-body');
+    const WIN_HEADER = WIN.find('.modal-header');
+
+    let user;
+    if (i.assignedTo) {
+        user = i.assignedTo.name;
+    }
+
+    let references = i.references;
+    if (vsckb_is_nil(references)) {
+        references = [];
+    }
+    references = references.map(r => r);
+
+    const TITLE_FIELD = WIN_BODY.find('#vsckb-edit-card-title');
+    TITLE_FIELD.val( vsckb_to_string(i.title) );
+
+    let descriptionOverflow = '';
+
+    const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
+    {
+        let descriptionToSet = '';
+
+        const DESC = vsckb_get_card_description( i.description );
+        if (DESC) {
+            descriptionToSet = vsckb_to_string(
+                DESC.content
+            );
+        }
+
+        if (descriptionToSet.length > 255) {
+            descriptionToSet = descriptionToSet.substr(0, 255);
+            descriptionOverflow = descriptionToSet.substr(255);
+        }
+
+        DESCRIPTION_FIELD.val( descriptionToSet );
+    }
+
+    if ('' === descriptionOverflow.trim()) {
+        descriptionOverflow = '';
+    }
+
+    const DETAILS_FIELD = WIN.find('#vsckb-edit-card-details');
+    {
+        let detailsToSet = '';
+
+        const DETAILS = vsckb_get_card_description( i.details );
+        if (DETAILS) {
+            detailsToSet = vsckb_to_string(
+                DETAILS.content
+            );
+        }
+
+        if ('' === detailsToSet.trim()) {
+            detailsToSet = '';
+        }
+
+        let sep = '';
+        if (descriptionOverflow.length > 0 && detailsToSet.length > 0) {
+            sep = "\n\n";
+        }
+
+        DETAILS_FIELD.val( descriptionOverflow + sep + detailsToSet );
+    }
+
+    const TYPE_FIELD = WIN.find('#vsckb-edit-card-type');
+    TYPE_FIELD.val( vsckb_normalize_str(i.type) );
+
+    const PRIO_FIELD = WIN.find('#vsckb-edit-card-prio');
+    PRIO_FIELD.val( vsckb_to_string(i.prio).trim() );
+    
+    const CATEGORY_FIELD = WIN.find('#vsckb-edit-card-category');
+    CATEGORY_FIELD.val( vsckb_to_string(i.category).trim() );
+
+    const ASSIGNED_TO_FIELD = WIN.find('#vsckb-edit-card-assigned-to');
+    ASSIGNED_TO_FIELD.val( vsckb_to_string(user) );
+
+    WIN.attr('vsckb-type', CARD_TYPE);
+
+    vsckb_win_header_from_card_type(WIN_HEADER, CARD_TYPE);
+
+    WIN.find('.modal-footer .vsckb-save-btn').off('click').on('click', function() {
+        const TITLE = vsckb_to_string(
+            TITLE_FIELD.val()
+        ).trim();
+        if ('' === TITLE) {
+            TITLE_FIELD.focus();
+            return;
+        }
+
+        const PRIO = vsckb_get_prio_val(PRIO_FIELD);
+        if (false === PRIO) {
+            PRIO_FIELD.focus();
+            return;
+        }
+        
+        let type = vsckb_normalize_str( TYPE_FIELD.val() );
+        if ('' === type) {
+            type = undefined;
+        }
+
+        let category = vsckb_to_string( CATEGORY_FIELD.val() ).trim();
+        if ('' === category) {
+            category = undefined;
+        }
+
+        i.assignedTo = vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD);
+        i.title = TITLE;
+        i.description = vsckb_get_card_description_markdown( DESCRIPTION_FIELD );
+        i.details = vsckb_get_card_description_markdown( DETAILS_FIELD );
+        i.prio = PRIO;
+        i.type = type;
+        i.category = category;
+        i.references = references;
+        
+        vsckb_save_board();
+
+        vsckb_refresh_card_view((ctx) => {
+            if (ctx.item !== i) {
+                return;
+            }
+
+            let oldCard;
+            try {
+                oldCard = JSON.parse(
+                    JSON.stringify(i)
+                );
+            } catch (e) { }
+
+            vsckb_raise_event('card_updated', {
+                card: i,
+                column: CARD_TYPE,
+                oldCard: oldCard
+            });
+        });
+
+        WIN.modal('hide');
+    });
+
+    // card links / references
+    {
+        const LINK_LIST_CONTEXT = vsckb_setup_card_link_list(WIN, {
+            onLinkCard: (args) => {
+                const CARD_ID = vsckb_to_string( args.card.id );
+                if ('' !== CARD_ID.trim()) {
+                    if (references.indexOf(CARD_ID) < 0) {
+                        references.push(CARD_ID);
+
+                        args.resetCardListValue();
+                        args.updateList( references );
+                    }
+                }
+            },
+            onCardDeleted: (args) => {
+                const CARD_ID = vsckb_to_string( args.card.id );
+                if ('' !== CARD_ID.trim()) {
+                    references = references.filter(r => {
+                        return r !== CARD_ID;
+                    });
+
+                    args.updateList( references );
+                }
+            },
+            thisCard: i
+        });
+
+        LINK_LIST_CONTEXT.updateList( references );
+    }
+
+    WIN.modal({
+        keyboard: false,
+        show: true
+    });
+}
+
+function vsckb_find_card_by_id(cardId) {
+    cardId = vsckb_to_string(cardId);
+    
+    let matchingCard = false;
+
+    if ('' !== cardId.trim()) {
+        vsckb_foreach_card((card) => {
+            if (vsckb_to_string(card.id) === cardId) {
+                matchingCard = card;
+            }
+        });
+    }
+
+    return matchingCard;
+}
+
+function vsckb_find_parent_cards_of(childId) {
+    childId = vsckb_to_string(childId);
+    
+    let parentCards = [];
+
+    if ('' !== childId.trim()) {
+        vsckb_foreach_card((card) => {
+            if (vsckb_to_string(card.id) === childId) {
+                return;
+            }
+
+            if (vsckb_is_nil(card.references)) {
+                return;
+            }
+
+            for (const CARD_REF of card.references) {
+                if (CARD_REF === childId) {
+                    parentCards = vsckb_add_card_unique(parentCards, card);
+                    break;
+                }
+            }
+        });
+    }
+
+    return parentCards;
+}
+
 function vsckb_foreach_card(action, cards) {
     if (arguments.length < 2) {
         cards = allCards;
@@ -46,25 +328,36 @@ function vsckb_get_assigned_to_val(field) {
     return assignedTo;
 }
 
-function vsckb_get_card_colors_by_type(cardType) {
+function vsckb_get_card_colors_by_type(cardType, opts) {
+    if (arguments.length < 2) {
+        opts = {};
+    }
+
+    let backgroundPrefix = vsckb_to_string( opts.backgroundPrefix ).trim();
+    if ('' === backgroundPrefix) {
+        backgroundPrefix = 'bg';
+    }
+
     const COLORS = {
-        background: 'bg-info',
+        background: 'info',
         text: 'text-white'
     };
 
     switch (vsckb_normalize_str(cardType)) {
         case 'bug':
-            COLORS.background = 'bg-dark';
+            COLORS.background = 'dark';
             break;
 
         case 'emergency':
-            COLORS.background = 'bg-danger';
+            COLORS.background = 'danger';
             break;
 
         default:
             COLORS.text = 'text-dark';
             break;
     }
+
+    COLORS.background = backgroundPrefix + '-' + COLORS.background;
 
     return COLORS;
 }
@@ -224,6 +517,149 @@ function vsckb_get_user_list() {
     });
 }
 
+function vsckb_open_card_detail_window(i, opts) {
+    if (arguments.length < 2) {
+        opts = {};
+    }
+
+    let detailsHtml = opts.html;
+
+    const WIN = jQuery('#vsckb-card-details-modal');
+    WIN.modal('hide');
+
+    const WIN_HEADER = WIN.find('.modal-header');
+    WIN_HEADER.attr('class', 'modal-header');
+
+    const WIN_HEADER_COLORS = vsckb_get_card_colors_by_type( i.type );
+    WIN_HEADER.addClass( WIN_HEADER_COLORS.background )
+              .addClass( WIN_HEADER_COLORS.text );
+
+    const WIN_HEADER_TITLE = WIN_HEADER.find('.modal-title');
+    WIN_HEADER_TITLE.text( vsckb_to_string(i.title) );
+
+    const WIN_BODY = WIN.find('.modal-body');
+    WIN_BODY.html('');
+
+    const WIN_BODY_BADGE_LIST = jQuery('<div class="vsckb-badge-list" />');
+
+    // column
+    {
+        let columnBadge = false;
+        vsckb_foreach_card((card, cardIndex, cardColumn) => {
+            if (card.id !== i.id) {
+                return;
+            }
+
+            columnBadge = false;
+            cardColumn = vsckb_normalize_str(cardColumn);
+
+            switch (cardColumn) {
+                case 'done':
+                    columnBadge = jQuery('<span class="badge badge-success text-white" />');
+                    break;
+
+                case 'in-progress':
+                    columnBadge = jQuery('<span class="badge badge-primary text-white" />');
+                    break;
+
+                case 'testing':
+                    columnBadge = jQuery('<span class="badge badge-warning text-white" />');
+                    break;
+
+                case 'todo':
+                    columnBadge = jQuery('<span class="badge badge-secondary text-dark" />');
+                    break;
+            }
+
+            if (false !== columnBadge) {
+                columnBadge.addClass('font-weight-bold')
+                            .text( cardColumn );
+            }
+        });
+
+        if (false !== columnBadge) {
+            WIN_BODY_BADGE_LIST.append( columnBadge );
+        }
+    }
+
+    // references
+    {
+        const REF_CARDS = (i.references || []).map(r => {
+            return vsckb_find_card_by_id(r);
+        }).filter(c => !vsckb_is_nil(c));
+
+        const PARENT_CARDS = vsckb_find_parent_cards_of( i.id );
+
+        let allLinkedCards = [];
+        REF_CARDS.concat( PARENT_CARDS ).forEach(c => {
+            vsckb_add_card_unique(allLinkedCards, c);
+        });
+
+        if (allLinkedCards.length > 0) {
+            vsckb_sort_cards( allLinkedCards ).forEach(rc => {
+                const NEW_REF_ITEM = jQuery('<span class="badge badge-pill vsckb-ref-badge" />');
+                NEW_REF_ITEM.text(
+                    vsckb_to_string(rc.title).trim()
+                );
+                NEW_REF_ITEM.attr('title', 'Click Here To View Card Details...');
+
+                let refCardType;
+                vsckb_foreach_card((c, i, col) => {
+                    if (c.id === rc.id) {
+                        refCardType = col;
+                    }
+                });
+
+                NEW_REF_ITEM.click(() => {
+                    let refDetailsHtml;
+                    vsckb_append_card_content(
+                        rc.details, null, (html) => {
+                            refDetailsHtml = html;
+                        }
+                    );
+
+                    vsckb_open_card_detail_window(rc, {
+                        cardType: refCardType,
+                        html: refDetailsHtml
+                    });
+                });
+
+                const NEW_REF_ITEM_COLORS = vsckb_get_card_colors_by_type(rc.type, 'badge');
+                NEW_REF_ITEM.addClass( NEW_REF_ITEM_COLORS.background );
+                NEW_REF_ITEM.addClass( 'text-white' );
+                
+                NEW_REF_ITEM.appendTo( WIN_BODY_BADGE_LIST );
+            });
+        }
+    }
+
+    WIN_BODY_BADGE_LIST.appendTo( WIN_BODY );
+
+    if (vsckb_is_nil(detailsHtml)) {
+        const NO_DETAILS = jQuery('<div class="alert alert-info font-italic text-white" role="alert" />').text(
+            'No Details Available'
+        );
+
+        WIN_BODY.append( NO_DETAILS );
+    } else {
+        WIN_BODY.append( detailsHtml );
+        vsckb_apply_highlight( WIN_BODY );
+    }
+
+    WIN.find('.modal-footer .vsckb-edit-btn').off('click').on('click', () => {
+        WIN.modal('hide');
+
+        jQuery('#vsckb-edit-card-modal').attr('vsckb-select-pane', 
+                                              'vsckb-edit-card-details-tab-pane');
+        
+        vsckb_edit_card(i, {
+            cardType: opts.cardType
+        });
+    });
+
+    WIN.modal('show');
+}
+
 function vsckb_refresh_card_view(onAdded) {
     try {
         if (false !== vsckb_update_card_interval) {
@@ -327,140 +763,9 @@ function vsckb_refresh_card_view(onAdded) {
 
             {
                 EDIT_BTN.on('click', function() {
-                    const WIN = jQuery('#vsckb-edit-card-modal');
-                    const WIN_BODY = WIN.find('.modal-body');
-                    const WIN_HEADER = WIN.find('.modal-header');
-
-                    let user;
-                    if (i.assignedTo) {
-                        user = i.assignedTo.name;
-                    }            
-
-                    const TITLE_FIELD = WIN_BODY.find('#vsckb-edit-card-title');
-                    TITLE_FIELD.val( vsckb_to_string(i.title) );
-
-                    let descriptionOverflow = '';
-
-                    const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
-                    {
-                        let descriptionToSet = '';
-
-                        const DESC = vsckb_get_card_description( i.description );
-                        if (DESC) {
-                            descriptionToSet = vsckb_to_string(
-                                DESC.content
-                            );
-                        }
-
-                        if (descriptionToSet.length > 255) {
-                            descriptionToSet = descriptionToSet.substr(0, 255);
-                            descriptionOverflow = descriptionToSet.substr(255);
-                        }
-
-                        DESCRIPTION_FIELD.val( descriptionToSet );
-                    }
-
-                    if ('' === descriptionOverflow.trim()) {
-                        descriptionOverflow = '';
-                    }
-
-                    const DETAILS_FIELD = WIN.find('#vsckb-edit-card-details');
-                    {
-                        let detailsToSet = '';
-
-                        const DETAILS = vsckb_get_card_description( i.details );
-                        if (DETAILS) {
-                            detailsToSet = vsckb_to_string(
-                                DETAILS.content
-                            );
-                        }
-
-                        if ('' === detailsToSet.trim()) {
-                            detailsToSet = '';
-                        }
-    
-                        let sep = '';
-                        if (descriptionOverflow.length > 0 && detailsToSet.length > 0) {
-                            sep = "\n\n";
-                        }
-
-                        DETAILS_FIELD.val( descriptionOverflow + sep + detailsToSet );
-                    }
-
-                    const TYPE_FIELD = WIN.find('#vsckb-edit-card-type');
-                    TYPE_FIELD.val( vsckb_normalize_str(i.type) );
-
-                    const PRIO_FIELD = WIN.find('#vsckb-edit-card-prio');
-                    PRIO_FIELD.val( vsckb_to_string(i.prio).trim() );
-                    
-                    const CATEGORY_FIELD = WIN.find('#vsckb-edit-card-category');
-                    CATEGORY_FIELD.val( vsckb_to_string(i.category).trim() );
-
-                    const ASSIGNED_TO_FIELD = WIN.find('#vsckb-edit-card-assigned-to');
-                    ASSIGNED_TO_FIELD.val( vsckb_to_string(user) );
-
-                    WIN.attr('vsckb-type', CARD_TYPE);
-
-                    vsckb_win_header_from_card_type(WIN_HEADER, CARD_TYPE);
-
-                    WIN.find('.modal-footer .vsckb-save-btn').off('click').on('click', function() {
-                        const TITLE = vsckb_to_string(
-                            TITLE_FIELD.val()
-                        ).trim();
-                        if ('' === TITLE) {
-                            TITLE_FIELD.focus();
-                            return;
-                        }
-
-                        const PRIO = vsckb_get_prio_val(PRIO_FIELD);
-                        if (false === PRIO) {
-                            PRIO_FIELD.focus();
-                            return;
-                        }
-                        
-                        let type = vsckb_normalize_str( TYPE_FIELD.val() );
-                        if ('' === type) {
-                            type = undefined;
-                        }
-
-                        let category = vsckb_to_string( CATEGORY_FIELD.val() ).trim();
-                        if ('' === category) {
-                            category = undefined;
-                        }
-
-                        i.assignedTo = vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD);
-                        i.title = TITLE;
-                        i.description = vsckb_get_card_description_markdown( DESCRIPTION_FIELD );
-                        i.details = vsckb_get_card_description_markdown( DETAILS_FIELD );
-                        i.prio = PRIO;
-                        i.type = type;
-                        i.category = category;
-                        
-                        vsckb_save_board();
-            
-                        vsckb_refresh_card_view((ctx) => {
-                            if (ctx.item !== i) {
-                                return;
-                            }
-
-                            let oldCard;
-                            try {
-                                oldCard = JSON.parse(
-                                    JSON.stringify(i)
-                                );
-                            } catch (e) { }
-
-                            vsckb_raise_event('card_updated', {
-                                card: i,
-                                column: CARD_TYPE,
-                                oldCard: oldCard
-                            });
-                        });
-            
-                        WIN.modal('hide');
+                    vsckb_edit_card(i, {
+                        cardType: CARD_TYPE
                     });
-
-                    WIN.modal('show');
                 });
 
                 EDIT_BTN.appendTo( NEW_ITEM_TYPE );
@@ -525,43 +830,7 @@ function vsckb_refresh_card_view(onAdded) {
                 NEW_ITEM_CATEGORY.show();
             }
 
-            const APPEND_CARD_CONTENT = (cardContentObj, target, ifAppended) => {
-                cardContentObj = vsckb_get_card_description( cardContentObj );
-                if (cardContentObj) {
-                    const CARD_CONTENT = vsckb_to_string( cardContentObj.content );
-                    if ('' !== CARD_CONTENT.trim()) {
-                        let html;
-
-                        switch (vsckb_normalize_str(cardContentObj.mime)) {
-                            case 'text/markdown':
-                                html = vsckb_from_markdown(
-                                    CARD_CONTENT
-                                );
-                                break;
-
-                            default:
-                                html = vsckb_to_string(
-                                    jQuery('<span />').text(CARD_CONTENT)
-                                                      .html()
-                                ).trim()
-                                 .split('\n').join('<br />');
-                                break;
-                        }
-
-                        if (target) {
-                            target.append(
-                                html
-                            );    
-                        }
-
-                        if (ifAppended) {
-                            ifAppended( html );
-                        }
-                    }
-                }
-            };
-
-            APPEND_CARD_CONTENT(
+            vsckb_append_card_content(
                 i.description, NEW_ITEM_INFO_BODY,
                 () => {
                     itemSetup = () => {
@@ -572,44 +841,22 @@ function vsckb_refresh_card_view(onAdded) {
                 }
             );
 
-            APPEND_CARD_CONTENT(
-                i.details, null,
-                (html) => {
-                    NEW_ITEM_INFO_BODY.on('click', function() {
-                        const WIN = jQuery('#vsckb-card-details-modal');
-
-                        // bg-warning
-                        const WIN_HEADER = WIN.find('.modal-header');
-                        WIN_HEADER.attr('class', 'modal-header');
-
-                        const WIN_HEADER_COLORS = vsckb_get_card_colors_by_type( i.type );
-                        WIN_HEADER.addClass( WIN_HEADER_COLORS.background )
-                                  .addClass( WIN_HEADER_COLORS.text );
-
-                        const WIN_HEADER_TITLE = WIN_HEADER.find('.modal-title');
-                        WIN_HEADER_TITLE.text( vsckb_to_string(i.title) );
-
-                        const WIN_BODY = WIN.find('.modal-body');
-                        WIN_BODY.html('');
-
-                        WIN_BODY.append( html );
-                        vsckb_apply_highlight( WIN_BODY );
-
-                        WIN.find('.modal-footer .vsckb-edit-btn').off('click').on('click', () => {
-                            WIN.modal('hide');
-
-                            jQuery('#vsckb-edit-card-modal').attr('vsckb-select-pane', 
-                                                                  'vsckb-edit-card-details-tab-pane');
-                            EDIT_BTN.trigger('click');
-                        });
-
-                        WIN.modal('show');
-                    });
-
-                    NEW_ITEM_INFO_BODY.addClass( 'vsckb-has-card-details' );
-                    NEW_ITEM_INFO_BODY.attr('title', 'Click here to view details ...');
+            let detailsHtml;
+            vsckb_append_card_content(
+                i.details, null, (html) => {
+                    detailsHtml = html;
                 }
             );
+            {
+                NEW_ITEM_INFO.on('click', function() {
+                    vsckb_open_card_detail_window(i, {
+                        cardType: CARD_TYPE,
+                        html: detailsHtml
+                    });
+                });
+
+                NEW_ITEM_INFO.attr('title', 'Click Here To View Details ...');
+            }
 
             const UPDATE_BORDER = (borderClass, borderWidth) => {
                 NEW_ITEM.removeClass('border-dark')
@@ -640,10 +887,10 @@ function vsckb_refresh_card_view(onAdded) {
                 const TEMP_DESCRIPTION = TEMP.find('.vsckb-description');
                 const TEMP_DETAILS = TEMP.find('.vsckb-details');
 
-                APPEND_CARD_CONTENT(i.description, TEMP_DESCRIPTION, () => {
+                vsckb_append_card_content(i.description, TEMP_DESCRIPTION, () => {
                     vsckb_apply_highlight( TEMP_DESCRIPTION );
                 });
-                APPEND_CARD_CONTENT(i.details, TEMP_DETAILS, () => {
+                vsckb_append_card_content(i.details, TEMP_DETAILS, () => {
                     vsckb_apply_highlight( TEMP_DETAILS );
                 });
 
@@ -745,6 +992,161 @@ function vsckb_setup_assigned_to(field, user) {
     if (false !== newVal) {
         field.val( newVal );
     }
+}
+
+function vsckb_setup_card_link_list(win, opts) {
+    if (!opts) {
+        opts = {};
+    }
+
+    const TAB_PANE = win.find('.vsckb-card-references-tab-pane');
+
+    const CARD_LIST = TAB_PANE.find('.vsckb-card-list');
+    CARD_LIST.html('<option value="">----- Select A Card -----</option>');
+
+    const LINKED_CARDS = TAB_PANE.find('.vsckb-list-of-linked-cards');
+    LINKED_CARDS.html('');
+
+    const LINK_BTN = TAB_PANE.find('.vsckb-add-link-to-card-btn');
+
+    let otherCards = [];
+    vsckb_foreach_card((card, index, column) => {
+        if (opts.thisCard) {
+            if (opts.thisCard.id === card.id) {
+                return;
+            }
+        }
+
+        otherCards.push({
+            card: card,
+            column: column,
+            index: index
+        });
+    });
+
+    otherCards = vsckb_sort_cards(otherCards, entry => entry.card);
+    otherCards.forEach(entry => {
+        const NEW_OPTION = jQuery('<option />');
+        NEW_OPTION.text( vsckb_to_string(entry.card.title).trim() );
+        NEW_OPTION.val( entry.card.id );
+        NEW_OPTION.attr( 'title', vsckb_to_string(entry.card.column) );
+
+        NEW_OPTION.appendTo( CARD_LIST );
+    });
+
+    const UPDATE_LIST = function(references) {
+        if (vsckb_is_nil(references)) {
+            references = [];
+        }
+
+        references = references.filter(r => {
+            if ('' === vsckb_to_string(r).trim()) {
+                return false;
+            }
+
+            if (opts.thisCard) {
+                if (references.indexOf( vsckb_to_string(opts.thisCard.id) ) > -1) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        LINKED_CARDS.html('');
+
+        if (references.length > 0) {
+            vsckb_sort_cards(
+                references.map(r => {
+                    return vsckb_find_card_by_id(r);
+                })
+            ).forEach(c => {
+                const NEW_REF_ITEM = jQuery('<span class="badge badge-pill vsckb-ref-badge" />');
+                NEW_REF_ITEM.text(
+                    vsckb_to_string(c.title).trim()
+                );
+                NEW_REF_ITEM.attr('title', 'Click Here To Remove...');
+
+                NEW_REF_ITEM.click(() => {
+                    NEW_REF_ITEM.remove();
+
+                    if (opts.onCardDeleted) {
+                        opts.onCardDeleted({
+                            card: c,
+                            updateList: UPDATE_LIST
+                        });
+                    }
+                });
+
+                const NEW_REF_ITEM_COLORS = vsckb_get_card_colors_by_type(c.type, 'badge');
+                NEW_REF_ITEM.addClass( NEW_REF_ITEM_COLORS.background );
+                NEW_REF_ITEM.addClass( 'text-white' );
+
+                NEW_REF_ITEM.appendTo( LINKED_CARDS );
+            });
+        } else {
+            const ALERT = jQuery('<div class="alert alert-info" role="alert" />');
+            ALERT.text('There Is Currently No Card Linked');
+
+            ALERT.appendTo( LINKED_CARDS );
+        }
+    };
+
+    LINK_BTN.off('click').on('click', function() {
+        const SELECTED_CARD_ID = vsckb_to_string( CARD_LIST.val() );
+        if ('' === SELECTED_CARD_ID.trim()) {
+            return;
+        }
+
+        const SELECTED_CARD = vsckb_find_card_by_id(SELECTED_CARD_ID);
+        if (!SELECTED_CARD) {
+            return;
+        }
+
+        if (opts.onLinkCard) {
+            opts.onLinkCard({
+                card: SELECTED_CARD,
+                resetCardListValue: () => {
+                    CARD_LIST.val('');
+                },
+                updateList: UPDATE_LIST
+            });
+        }
+    });
+
+    return {
+        updateList: UPDATE_LIST
+    };
+}
+
+function vsckb_sort_cards(items, cardSelector) {
+    if (arguments.length < 2) {
+        cardSelector = (c) => c;
+    }
+
+    return (items || []).filter(i => {
+        return !vsckb_is_nil(i) &&
+               !vsckb_is_nil( cardSelector(i) );
+    }).sort((x, y) => {
+        x = cardSelector(x);
+        y = cardSelector(y);
+
+        // first by title
+        const COMP_0 = vsckb_get_sort_val(vsckb_normalize_str(x.title),
+                                          vsckb_normalize_str(y.title));
+        if (0 !== COMP_0) {
+            return COMP_0;
+        }
+
+        // then by creation time
+        const COMP_1 = vsckb_get_sort_val(vsckb_normalize_str(x.creation_time),
+                                          vsckb_normalize_str(y.creation_time));
+        if (0 !== COMP_1) {
+            return COMP_1;
+        }
+
+        return 0;
+    });
 }
 
 function vsckb_update_card_creation_times() {
@@ -1048,6 +1450,8 @@ jQuery(() => {
 
 jQuery(() => {
     jQuery('body main .row .col .vsckb-card .vsckb-buttons .vsckb-add-btn').on('click', function() {
+        let references = [];
+
         const BTN = jQuery(this);
 
         const CARD = BTN.parent().parent().parent();
@@ -1055,6 +1459,8 @@ jQuery(() => {
         const TYPE = CARD.attr('id').substr(11).toLowerCase().trim();
 
         const WIN = jQuery('#vsckb-add-card-modal');
+        WIN.modal('hide');
+
         const WIN_BODY = WIN.find('.modal-body');
         const WIN_FOOTER = WIN.find('.modal-footer');
         const WIN_HEADER = WIN.find('.modal-header');
@@ -1088,6 +1494,8 @@ jQuery(() => {
                  .append( WIN_TITLE_TEXT );
 
         WIN_FOOTER.find('.btn').off('click').on('click', function() {
+            const CREATION_TIME = moment.utc();
+
             const TITLE = vsckb_to_string(
                 TITLE_FIELD.val()
             ).trim();
@@ -1112,13 +1520,20 @@ jQuery(() => {
                 category = undefined;
             }
 
+            let id = '';
+            id += CREATION_TIME.format('YYYYMMDDHHmmss') + '_';
+            id += Math.floor(Math.random() * 597923979) + '_';
+            id += vsckb_uuid().split('-').join('');
+
             const NEW_CARD = {
                 assignedTo: vsckb_get_assigned_to_val( ASSIGNED_TO_FIELD ),
                 category: category,
-                creation_time: moment.utc().toISOString(),
+                creation_time: CREATION_TIME.toISOString(),
                 description: vsckb_get_card_description_markdown( DESCRIPTION_FIELD ),
                 details: vsckb_get_card_description_markdown( DETAILS_FIELD ),
+                id: id,
                 prio: PRIO,
+                references: references,
                 title: TITLE,
                 type: type
             };
@@ -1141,7 +1556,39 @@ jQuery(() => {
             WIN.modal('hide');
         });
 
-        WIN.modal('show');
+        // card links / references
+        {
+            const LINK_LIST_CONTEXT = vsckb_setup_card_link_list(WIN, {
+                onLinkCard: (args) => {
+                    const CARD_ID = vsckb_to_string( args.card.id );
+                    if ('' !== CARD_ID.trim()) {
+                        if (references.indexOf(CARD_ID) < 0) {
+                            references.push(CARD_ID);
+
+                            args.resetCardListValue();
+                            args.updateList( references );
+                        }
+                    }
+                },
+                onCardDeleted: (args) => {
+                    const CARD_ID = vsckb_to_string( args.card.id );
+                    if ('' !== CARD_ID.trim()) {
+                        references = references.filter(r => {
+                            return r !== CARD_ID;
+                        });
+
+                        args.updateList( references );
+                    }
+                }
+            });
+
+            LINK_LIST_CONTEXT.updateList( references );
+        }
+
+        WIN.modal({
+            keyboard: false,
+            show: true
+        });
     });
 });
 
@@ -1248,7 +1695,7 @@ jQuery(() => {
 
         SELECT.append('<option value="bug">Bug / issue</option>')
               .append('<option value="emergency">Emergency</option>')
-              .append('<option value="" selected>Note</option>');
+              .append('<option value="" selected>Note / task</option>');
     });
 });
 

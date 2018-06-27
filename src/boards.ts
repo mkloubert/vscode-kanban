@@ -77,9 +77,17 @@ export interface BoardCard {
      */
     details?: BoardCardContentValue;
     /**
+     * The ID of the card.
+     */
+    id?: string;
+    /**
      * The priority.
      */
     prio?: number;
+    /**
+     * A list of one or more card IDs that card references to.
+     */
+    references?: string[];
     /**
      * User defined data from scripts, e.g.
      */
@@ -495,6 +503,12 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                                         Details
                                     </a>
                                 </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" id="vsckb-new-card-references-tab" data-toggle="pill" href="#vsckb-new-card-references-tab-pane" role="tab" aria-controls="vsckb-new-card-references-tab-pane" aria-selected="false">
+                                        References
+                                    </a>
+                                </li>
                             </ul>
 
                             <div class="tab-content vsckb-card-description-details-tab-content" id="vsckb-new-card-description-details-tab-content">
@@ -504,6 +518,26 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
                                 <div class="tab-pane form-group" id="vsckb-new-card-details-tab-pane" role="tabpanel" aria-labelledby="vsckb-new-card-details-tab">
                                     <textarea class="form-control" id="vsckb-new-card-details" rows="7"></textarea>
+                                </div>
+
+                                <div class="tab-pane form-group vsckb-card-references-tab-pane" id="vsckb-new-card-references-tab-pane" role="tabpanel" aria-labelledby="vsckb-new-card-references-tab">
+                                    <nav class="navbar navbar-light bg-light">
+                                        <form class="row form-inline" style="margin: 0; padding: 0;">
+                                            <div class="col" style="display: table; margin: 0; padding: 0;">
+                                                <div style="display: table-cell;">
+                                                    <select class="form-control vsckb-card-list"></select>
+                                                </div>
+
+                                                <div style="display: table-cell; width: 32px; padding: 8px; top: -2px; position: relative;">
+                                                    <a class="btn btn-sm btn-primary text-white vsckb-add-link-to-card-btn text-center align-middle" title="Add Link To Card ..." id="vsckb-edit-card-add-link-btn">
+                                                        <i class="fa fa-link" aria-hidden="true"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </nav>
+
+                                    <div class="vsckb-list-of-linked-cards"></div>
                                 </div>
                             </div>
                         </div>
@@ -606,6 +640,12 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                                         Details
                                     </a>
                                 </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" id="vsckb-edit-card-references-tab" data-toggle="pill" href="#vsckb-edit-card-references-tab-pane" role="tab" aria-controls="vsckb-edit-card-references-tab-pane" aria-selected="false">
+                                        References
+                                    </a>
+                                </li>
                             </ul>
 
                             <div class="tab-content vsckb-card-description-details-tab-content" id="vsckb-edit-card-description-details-tab-content">
@@ -615,6 +655,26 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
                                 <div class="tab-pane form-group" id="vsckb-edit-card-details-tab-pane" role="tabpanel" aria-labelledby="vsckb-edit-card-details-tab">
                                     <textarea class="form-control" id="vsckb-edit-card-details" rows="7"></textarea>
+                                </div>
+
+                                <div class="tab-pane form-group vsckb-card-references-tab-pane" id="vsckb-edit-card-references-tab-pane" role="tabpanel" aria-labelledby="vsckb-edit-card-references-tab">
+                                    <nav class="navbar navbar-light bg-light">
+                                        <form class="row form-inline" style="margin: 0; padding: 0;">
+                                            <div class="col" style="display: table; margin: 0; padding: 0;">
+                                                <div style="display: table-cell;">
+                                                    <select class="form-control vsckb-card-list"></select>
+                                                </div>
+
+                                                <div style="display: table-cell; width: 32px; padding: 8px; top: -2px; position: relative;">
+                                                    <a class="btn btn-sm btn-primary text-white vsckb-add-link-to-card-btn text-center align-middle" title="Add Link To Card ..." id="vsckb-edit-card-add-link-btn">
+                                                        <i class="fa fa-link" aria-hidden="true"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </nav>
+
+                                    <div class="vsckb-list-of-linked-cards"></div>
                                 </div>
                             </div>
                         </div>
@@ -1132,6 +1192,24 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
                                          = vscode_helpers.asArray( loadedBoard[ BC ] );
 
                 for (const C of CARDS) {
+                    if (vscode_helpers.isEmptyString(C.id)) {
+                        let prefix = '';
+                        try {
+                            if (!vscode_helpers.isEmptyString(C.creation_time)) {
+                                const CREATION_TIME = vscode_helpers.asUTC(
+                                    C.creation_time
+                                );
+                                if (CREATION_TIME.isValid()) {
+                                    prefix += CREATION_TIME.format('YYYYMMDDHHmmss') + '_';
+                                }
+                            }
+                        } catch { }
+
+                        prefix += Math.floor(Math.random() * 597923979) + '_';
+
+                        C.id = `${ prefix }${ vscode_helpers.uuid().split('-').join('') }`;
+                    }
+
                     SET_CARD_CONTENT(C, 'description');
                     SET_CARD_CONTENT(C, 'details');
                 }

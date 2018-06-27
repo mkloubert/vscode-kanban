@@ -15,6 +15,20 @@
     max-height: 480px;
     overflow-x: hidden;
     overflow-y: auto;
+    word-break: break-all;
+}
+
+#vsckb-card-details-modal .vsckb-badge-list {
+    margin-bottom: 16px;
+}
+
+#vsckb-card-details-modal .vsckb-badge-list .badge {
+    margin-right: 8px;
+    padding: 8px;
+}
+
+#vsckb-card-details-modal .vsckb-badge-list .vsckb-ref-badge {
+    cursor: pointer;
 }
 
 body main .row .col .vsckb-card {
@@ -87,13 +101,13 @@ body main .row .col .vsckb-card .card-body {
 
 .vsckb-kanban-card .vsckb-kanban-card-info .vsckb-kanban-card-body {
     margin-top: 8px;
-    min-height: 96px;
+    min-height: 80px;
     overflow-x: hidden;
     padding: 2px 8px;
     word-wrap: break-word;
 }
 
-.vsckb-kanban-card .vsckb-kanban-card-info .vsckb-kanban-card-body.vsckb-has-card-details {
+.vsckb-kanban-card .vsckb-kanban-card-info {
     cursor: pointer;
 }
 
@@ -108,4 +122,17 @@ body main .row .col .vsckb-card .card-body {
 
 #vsckb-additional-header-btns .btn {
     margin-left: 4px;
+}
+
+.vsckb-list-of-linked-cards {
+    margin-top: 8px;
+}
+
+.vsckb-list-of-linked-cards .vsckb-ref-badge {
+    cursor: pointer;
+}
+
+.vsckb-list-of-linked-cards .badge {
+    margin-right: 8px;
+    padding: 8px;
 }

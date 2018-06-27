@@ -212,6 +212,17 @@ function vsckb_to_string(val) {
     return '' + val;
 }
 
+// s. https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+function vsckb_uuid() {
+    const S4 = function() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+                   .toString(16)
+                   .substring(1);
+    };
+
+    return S4() + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4();
+}
+
 jQuery(() => {
     showdown.setFlavor('github');
 
