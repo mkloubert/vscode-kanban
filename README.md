@@ -107,17 +107,15 @@ Card descriptions can also include diagrams and charts, using a language parsed 
 
 Those diagram / char descriptions has to be put into a Markdown code block, which uses `mermaid` as language:
 
-<code>
-Example graph:<br />
-<br />
-&#96;&#96;&#96;mermaid<br />
-graph TD;<br />
-&nbsp;&nbsp;&nbsp;&nbsp;A-->B;<br />
-&nbsp;&nbsp;&nbsp;&nbsp;A-->C;<br />
-&nbsp;&nbsp;&nbsp;&nbsp;B-->D;<br />
-&nbsp;&nbsp;&nbsp;&nbsp;C-->D;<br />
-&#96;&#96;&#96;
-</code>
+    Example graph:
+    
+    ```mermaid
+    graph TD;
+        A-->B;
+        A-->C;
+        B-->D;
+        C-->D;
+    ```
 
 ### Handle events [[&uarr;](#how-to-use-)]
 
