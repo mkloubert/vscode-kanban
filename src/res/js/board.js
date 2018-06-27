@@ -89,8 +89,10 @@ function vsckb_edit_card(i, opts) {
 
     let descriptionOverflow = '';
 
-    const DESCRIPTION_FIELD = WIN.find('#vsckb-edit-card-description');
-    {
+    let descriptionField;
+    vsckb_invoke_for_md_editor('vsckb-edit-card-description', (e) => {
+        descriptionField = e;
+
         let descriptionToSet = '';
 
         const DESC = vsckb_get_card_description( i.description );
@@ -105,15 +107,17 @@ function vsckb_edit_card(i, opts) {
             descriptionOverflow = descriptionToSet.substr(255);
         }
 
-        DESCRIPTION_FIELD.val( descriptionToSet );
-    }
+        descriptionField.editor.setValue( descriptionToSet );
+    });
 
     if ('' === descriptionOverflow.trim()) {
         descriptionOverflow = '';
     }
 
-    const DETAILS_FIELD = WIN.find('#vsckb-edit-card-details');
-    {
+    let detailsField;
+    vsckb_invoke_for_md_editor('vsckb-edit-card-details', (e) => {
+        detailsField = e;
+
         let detailsToSet = '';
 
         const DETAILS = vsckb_get_card_description( i.details );
@@ -132,8 +136,8 @@ function vsckb_edit_card(i, opts) {
             sep = "\n\n";
         }
 
-        DETAILS_FIELD.val( descriptionOverflow + sep + detailsToSet );
-    }
+        detailsField.editor.setValue( descriptionOverflow + sep + detailsToSet );
+    });
 
     const TYPE_FIELD = WIN.find('#vsckb-edit-card-type');
     TYPE_FIELD.val( vsckb_normalize_str(i.type) );
@@ -178,8 +182,8 @@ function vsckb_edit_card(i, opts) {
 
         i.assignedTo = vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD);
         i.title = TITLE;
-        i.description = vsckb_get_card_description_markdown( DESCRIPTION_FIELD );
-        i.details = vsckb_get_card_description_markdown( DETAILS_FIELD );
+        i.description = vsckb_get_card_description_markdown( descriptionField );
+        i.details = vsckb_get_card_description_markdown( detailsField );
         i.prio = PRIO;
         i.type = type;
         i.category = category;
@@ -400,7 +404,7 @@ function vsckb_get_card_description(desc) {
 
 function vsckb_get_card_description_markdown(field) {
     let description = vsckb_to_string(
-        field.val()
+        field.editor.getValue()
     );
 
     if ('' === description.trim()) {
@@ -643,6 +647,7 @@ function vsckb_open_card_detail_window(i, opts) {
         WIN_BODY.append( NO_DETAILS );
     } else {
         WIN_BODY.append( detailsHtml );
+
         vsckb_apply_highlight( WIN_BODY );
     }
 
@@ -836,7 +841,9 @@ function vsckb_refresh_card_view(onAdded) {
                     itemSetup = () => {
                         vsckb_apply_highlight(
                             NEW_ITEM_INFO_BODY
-                        );  
+                        );
+
+                        vsckb_apply_mermaid( NEW_ITEM_INFO_BODY );
                     };
                 }
             );
@@ -1408,12 +1415,16 @@ jQuery(() => {
     const WIN = jQuery('#vsckb-add-card-modal');
     
     const TITLE_FIELD = WIN.find('#vsckb-new-card-title');
-    const DESCRIPTION_FIELD = WIN.find('#vsckb-new-card-description');
+
+    let descriptionField;
+    vsckb_invoke_for_md_editor('vsckb-new-card-description', (e) => {
+        descriptionField = e;
+    });
 
     TITLE_FIELD.off('keyup').on('keyup', function(e) {
         if (13 == e.which) {
             e.preventDefault();
-            DESCRIPTION_FIELD.focus();
+            descriptionField.editor.focus();
 
             return;
         }
@@ -1469,11 +1480,19 @@ jQuery(() => {
         const TITLE_FIELD = WIN_BODY.find('#vsckb-new-card-title');
         TITLE_FIELD.val('');
 
-        const DESCRIPTION_FIELD = WIN.find('#vsckb-new-card-description');
-        DESCRIPTION_FIELD.val('');
-        
-        const DETAILS_FIELD = WIN.find('#vsckb-new-card-details');
-        DETAILS_FIELD.val('');
+        let descriptionField;
+        vsckb_invoke_for_md_editor('vsckb-new-card-description', (e) => {
+            descriptionField = e;
+
+            descriptionField.editor.setValue('');
+        });
+
+        let detailsField;
+        vsckb_invoke_for_md_editor('vsckb-new-card-details', (e) => {
+            detailsField = e;
+
+            detailsField.editor.setValue('');
+        });
 
         const TYPE_FIELD = WIN.find('#vsckb-new-card-type');
 
@@ -1529,8 +1548,8 @@ jQuery(() => {
                 assignedTo: vsckb_get_assigned_to_val( ASSIGNED_TO_FIELD ),
                 category: category,
                 creation_time: CREATION_TIME.toISOString(),
-                description: vsckb_get_card_description_markdown( DESCRIPTION_FIELD ),
-                details: vsckb_get_card_description_markdown( DETAILS_FIELD ),
+                description: vsckb_get_card_description_markdown( descriptionField ),
+                details: vsckb_get_card_description_markdown( detailsField ),
                 id: id,
                 prio: PRIO,
                 references: references,
@@ -1717,6 +1736,16 @@ jQuery(() => {
 
     jQuery('#vsckb-save-board-btn').on('click', function() {
         vsckb_save_board();
+    });
+});
+
+jQuery(() => {
+    const WIN = jQuery('#vsckb-card-details-modal');
+
+    WIN.on('shown.bs.modal', function () {
+        vsckb_apply_mermaid(
+            WIN.find('.modal-body')
+        );
     });
 });
 

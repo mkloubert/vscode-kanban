@@ -136,3 +136,9 @@ body main .row .col .vsckb-card .card-body {
     margin-right: 8px;
     padding: 8px;
 }
+
+.CodeMirror {
+    height: 144px;
+    margin-bottom: 4px;
+    margin-top: 4px;
+}

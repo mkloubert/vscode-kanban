@@ -1,8 +1,24 @@
+const MARKDOWN_EDITORS = [];
 
 function vsckb_apply_highlight(selector) {
     selector.find('pre code').each(function(i, block) {
         hljs.highlightBlock(block);
     });
+}
+
+function vsckb_apply_mermaid(element) {
+    element.find('pre code.language-mermaid').each(function(i, block) {
+        const CODE_BLOCK = jQuery(block);
+        const PRE_BLOCK = CODE_BLOCK.parent();
+
+        const MERMAID_DIV = jQuery( '<div class="mermaid vsckb-mermaid" />' );
+        MERMAID_DIV.text( CODE_BLOCK.text() );
+
+        PRE_BLOCK.replaceWith( MERMAID_DIV );
+    });
+
+    mermaid.init(undefined,
+                 element.find('.vsckb-mermaid'));
 }
 
 function vsckb_clone(val) {
@@ -73,7 +89,6 @@ function vsckb_from_markdown(md) {
         NEW_CHECKBOX.appendTo( LI );
     });
 
-    // dynamic links do not work in webviews
     CONTENT.find('a').each(function() {
         const A = jQuery(this);
 
@@ -103,6 +118,20 @@ function vsckb_get_sort_val(x, y) {
     }
 
     return 0;
+}
+
+function vsckb_invoke_for_md_editor(id, action) {
+    id = vsckb_to_string(id);
+
+    MARKDOWN_EDITORS.forEach(e => {
+        if (e.element.attr('id') !== id) {
+            return;
+        }
+
+        if (action) {
+            action(e);
+        }
+    });
 }
 
 function vsckb_is_nil(val) {
@@ -249,5 +278,45 @@ jQuery(() => {
         }
 
         vsckb_open_url(URL_ID);
+    });
+});
+
+jQuery(() => {
+    jQuery('.vsckb-markdown-editor').each(function() {
+        const EDITOR = jQuery(this);
+
+        const MAX_LENGTH = parseInt(
+            vsckb_to_string( EDITOR.attr('maxlength') ).trim()
+        );
+
+        const EDITOR_OPTS = {
+            dragDrop: true,
+            lineNumbers: true,
+            lineWrapping: true,
+            mode: "text/x-markdown",
+            autoRefresh: {
+                delay: 500
+            }
+        };
+
+        const NEW_EDITOR = CodeMirror.fromTextArea(EDITOR[0], EDITOR_OPTS);
+
+        if (!isNaN(MAX_LENGTH) && MAX_LENGTH >= 0) {
+            NEW_EDITOR.on('change', function(cm) {
+                const CURRENT_VALUE = vsckb_to_string( cm.getValue() );
+                if (CURRENT_VALUE.length > MAX_LENGTH) {
+                    cm.setValue(
+                        CURRENT_VALUE.substr(0, MAX_LENGTH)
+                    );
+
+                    cm.setCursor(cm.lineCount(), 0);
+                }
+            });
+        }
+
+        MARKDOWN_EDITORS.push({
+            editor: NEW_EDITOR,
+            element: EDITOR
+        });
     });
 });

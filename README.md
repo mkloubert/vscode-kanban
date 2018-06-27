@@ -18,6 +18,7 @@
    * [How to execute](#how-to-execute-)
    * [Settings](#settings-)
    * [Markdown support](#markdown-support-)
+   * [Diagrams and charts](#diagrams-and-charts-)
    * [Handle events](#handle-events-)
    * [Time tracking](#time-tracking-)
      * [Simple time tracking](#simple-time-tracking-)
@@ -97,6 +98,26 @@ The extension uses the following [settings](https://github.com/showdownjs/showdo
 ```
 
 Code blocks are parsed by [highlight.js](https://highlightjs.org/) and all [provided languages](https://highlightjs.org/static/demo/) are included and supported.
+
+### Diagrams and charts [[&uarr;](#how-to-use-)]
+
+![Demo 7](https://raw.githubusercontent.com/mkloubert/vscode-kanban/master/img/demo7.gif)
+
+Card descriptions can also include diagrams and charts, using a language parsed and rendered by [mermaid](https://github.com/knsv/mermaid).
+
+Those diagram / char descriptions has to be put into a Markdown code block, which uses `mermaid` as language:
+
+<code>
+Example graph:<br />
+<br />
+&#96;&#96;&#96;mermaid<br />
+graph TD;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;A-->B;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;A-->C;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;B-->D;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;C-->D;<br />
+&#96;&#96;&#96;
+</code>
 
 ### Handle events [[&uarr;](#how-to-use-)]
 

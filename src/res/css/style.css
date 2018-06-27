@@ -49,3 +49,7 @@ body main .row .col {
     margin: 0;
     padding: 0;
 }
+
+.CodeMirror pre {
+    padding-left: 12px;
+}

@@ -513,11 +513,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
                             <div class="tab-content vsckb-card-description-details-tab-content" id="vsckb-new-card-description-details-tab-content">
                                 <div class="tab-pane form-group show active" id="vsckb-new-card-description-tab-pane" role="tabpanel" aria-labelledby="vsckb-new-card-description-tab">
-                                    <textarea class="form-control" id="vsckb-new-card-description" rows="5"></textarea>
+                                    <textarea class="form-control vsckb-markdown-editor" id="vsckb-new-card-description" rows="5"></textarea>
                                 </div>
 
                                 <div class="tab-pane form-group" id="vsckb-new-card-details-tab-pane" role="tabpanel" aria-labelledby="vsckb-new-card-details-tab">
-                                    <textarea class="form-control" id="vsckb-new-card-details" rows="7"></textarea>
+                                    <textarea class="form-control vsckb-markdown-editor" id="vsckb-new-card-details" rows="7"></textarea>
                                 </div>
 
                                 <div class="tab-pane form-group vsckb-card-references-tab-pane" id="vsckb-new-card-references-tab-pane" role="tabpanel" aria-labelledby="vsckb-new-card-references-tab">
@@ -650,11 +650,11 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
                             <div class="tab-content vsckb-card-description-details-tab-content" id="vsckb-edit-card-description-details-tab-content">
                                 <div class="tab-pane form-group show active" id="vsckb-edit-card-description-tab-pane" role="tabpanel" aria-labelledby="vsckb-edit-card-description-tab">
-                                    <textarea class="form-control" id="vsckb-edit-card-description" rows="5" maxlength="255"></textarea>
+                                    <textarea class="form-control vsckb-markdown-editor" id="vsckb-edit-card-description" rows="5" maxlength="255"></textarea>
                                 </div>
 
                                 <div class="tab-pane form-group" id="vsckb-edit-card-details-tab-pane" role="tabpanel" aria-labelledby="vsckb-edit-card-details-tab">
-                                    <textarea class="form-control" id="vsckb-edit-card-details" rows="7"></textarea>
+                                    <textarea class="form-control vsckb-markdown-editor" id="vsckb-edit-card-details" rows="7"></textarea>
                                 </div>
 
                                 <div class="tab-pane form-group vsckb-card-references-tab-pane" id="vsckb-edit-card-references-tab-pane" role="tabpanel" aria-labelledby="vsckb-edit-card-references-tab">

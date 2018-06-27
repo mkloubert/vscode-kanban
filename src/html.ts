@@ -168,10 +168,18 @@ export function generateHeader(opts: GenerateHeaderOptions) {
 
         <link rel="stylesheet" href="${ opts.getResourceUri('css/font-awesome.css') }">
         <link rel="stylesheet" href="${ opts.getResourceUri('css/hljs-atom-one-dark.css') }">
+        <link rel="stylesheet" href="${ opts.getResourceUri('css/codemirror.css') }">
+        <link rel="stylesheet" href="${ opts.getResourceUri('css/mermaid/mermaid.css') }">
+        <link rel="stylesheet" href="${ opts.getResourceUri('css/mermaid/mermaid.dark.css') }">
         <link rel="stylesheet" href="${ opts.getResourceUri('css/bootstrap.min.css') }" vsckb-style="bootstrap">
 
         <script src="${ opts.getResourceUri('js/moment-with-locales.min.js') }"></script>
         <script src="${ opts.getResourceUri('js/highlight.pack.js') }"></script>
+        <script src="${ opts.getResourceUri('js/codemirror/codemirror.js') }"></script>
+        <script src="${ opts.getResourceUri('js/codemirror/addon/display/autorefresh.js') }"></script>
+        <script src="${ opts.getResourceUri('js/codemirror/mode/markdown/markdown.js') }"></script>
+        <script src="${ opts.getResourceUri('js/mermaid/mermaid.js') }"></script>
+        <script src="${ opts.getResourceUri('js/mermaid/mermaidAPI.js') }"></script>
         <script src="${ opts.getResourceUri('js/showdown.min.js') }"></script>
         <script src="${ opts.getResourceUri('js/jquery.min.js') }" crossorigin="anonymous"></script>
         <script src="${ opts.getResourceUri('js/bootstrap.bundle.min.js') }" crossorigin="anonymous"></script>
