@@ -539,10 +539,11 @@ function vsckb_open_card_detail_window(i, opts) {
     const WIN_HEADER_TITLE = WIN_HEADER.find('.modal-title');
     WIN_HEADER_TITLE.text( vsckb_to_string(i.title) );
 
-    const WIN_BODY = WIN.find('.modal-body');
+    const WIN_BODY = WIN.find('.modal-body .vsckb-body');
     WIN_BODY.html('');
 
-    const WIN_BODY_BADGE_LIST = jQuery('<div class="vsckb-badge-list" />');
+    const WIN_BODY_BADGE_LIST = WIN.find('.modal-body .vsckb-badge-list');
+    WIN_BODY_BADGE_LIST.html('');
 
     // column
     {
@@ -634,8 +635,6 @@ function vsckb_open_card_detail_window(i, opts) {
             });
         }
     }
-
-    WIN_BODY_BADGE_LIST.appendTo( WIN_BODY );
 
     if (vsckb_is_nil(detailsHtml)) {
         const NO_DETAILS = jQuery('<div class="alert alert-info font-italic text-white" role="alert" />').text(

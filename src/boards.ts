@@ -354,6 +354,7 @@ export const BOARD_COLMNS: ReadonlyArray<string> = [
 const KNOWN_URLS = {
     'filter-help': 'https://github.com/mkloubert/vscode-kanban#filter-',
     'github': 'https://github.com/mkloubert/vscode-kanban',
+    'mermaid-help': 'https://mermaidjs.github.io',
     'markdown-help': 'https://github.com/showdownjs/showdown/wiki',
     'paypal': 'https://paypal.me/MarcelKloubert',
     'twitter': 'https://twitter.com/mjkloubert',
@@ -564,7 +565,13 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
                 <div class="row">
                     <div class="col col-12">
-                        <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="markdown-help">Markdown Help</a>
+                        <div class="vsckb-help-link">
+                            <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="markdown-help">Markdown Help</a>
+                        </div>
+
+                        <div class="vsckb-help-link">
+                            <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="mermaid-help">Diagram Help</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -707,7 +714,13 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
 
                 <div class="row">
                     <div class="col col-12">
-                        <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="markdown-help">Markdown Help</a>
+                        <div class="vsckb-help-link">
+                            <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="markdown-help">Markdown Help</a>
+                        </div>
+
+                        <div class="vsckb-help-link">
+                            <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="mermaid-help">Diagram Help</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -762,7 +775,15 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                 </button>
             </div>
 
-            <div class="modal-body"></div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col col-12 vsckb-badge-list"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col col-12 vsckb-body"></div>
+                </div>
+            </div>
 
             <div class="modal-footer">
                 <a class="btn btn-primary vsckb-edit-btn text-white">

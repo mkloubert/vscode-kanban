@@ -12,7 +12,7 @@
     max-width: 67% !important;
 }
 
-#vsckb-card-details-modal .modal-body {
+#vsckb-card-details-modal .modal-body .vsckb-body {
     max-height: 480px;
     overflow-x: hidden;
     overflow-y: auto;
@@ -142,4 +142,10 @@ body main .row .col .vsckb-card .card-body {
     height: 144px;
     margin-bottom: 4px;
     margin-top: 4px;
+}
+
+
+.vsckb-help-link {
+    float: left;
+    margin-right: 16px;
 }
