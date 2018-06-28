@@ -749,7 +749,7 @@ function vsckb_refresh_card_view(onAdded) {
             vsckb_to_string(card.prio).trim()
         );
         if (isNaN(prio)) {
-            prio = undefined;
+            prio = 0;
         }
 
         return vsckb_does_match(DISPLAY_FILTER, {
