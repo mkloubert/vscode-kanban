@@ -174,8 +174,8 @@ Cards can be filtered by using a powerful language, provided by [filtrex](https:
 | `is_nil(val)` | Checks if a value is `(null)` or `(undefined)`. | `is_nil(category)` |
 | `is_older(days: number, alsoSameDay?: bool = false)` | `(true)`, if a card is older than a specific number of days. | `is_older(30)` |
 | `is_younger(days: number, alsoSameDay?: bool = false)` | `(true)`, if a card is younger than a specific number of days. | `is_younger(30)` |
-| `norm(val)` | Short version of `normalize()`. | `norm(" Marcel Kloubert ") == ""` |
-| `normalize(val)` | Converts a value to a string and converts the characters to lower case by removing leading and ending whitespaces. | `norm(" Marcel Kloubert ") == "marcel lloubert"` |
+| `norm(val)` | Short version of `normalize()`. | `norm(" Marcel Kloubert ") == "marcel kloubert"` |
+| `normalize(val)` | Converts a value to a string and converts the characters to lower case by removing leading and ending whitespaces. | `norm(" Marcel Kloubert ") == "marcel kloubert"` |
 | `number(val)` | Alias of number. | `number("5.979") == 5.979` |
 | `regex(val, pattern: string, flags?: string)` | `(true)` if a value matches a regular expression. s. [RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | `regex(assigned_to, "^(marcel|tanja)", "i")` |
 | `str(val)` | Converts a value to a string. | `str(59.79) == "59.79"` |
