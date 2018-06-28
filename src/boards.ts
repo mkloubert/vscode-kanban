@@ -268,6 +268,10 @@ export interface OpenBoardOptions {
      */
     git?: any;
     /**
+     * Loads a filter.
+     */
+    loadFilter?: () => string | PromiseLike<string>;
+    /**
      * Do not detect username via source control manager.
      */
     noScmUser?: boolean;
@@ -279,6 +283,10 @@ export interface OpenBoardOptions {
      * A listener for a 'save board' event.
      */
     saveBoard?: SaveBoardEventListener;
+    /**
+     * A listener for a 'save board filter' event.
+     */
+    saveFilter?: SaveBoardFilterEventListener;
     /**
      * The settings for the board.
      */
@@ -310,6 +318,14 @@ interface RaiseEvent {
 export type SaveBoardEventListener = (board: Board) => any;
 
 /**
+ * An listener for a 'save board filter' event.
+ *
+ * @param {string} filter The filter to save.
+ * @param {Board} board The underling board.
+ */
+export type SaveBoardFilterEventListener = (filter: string) => any;
+
+/**
  * Data of a 'track time' event.
  */
 export interface TrackTimeEventData extends EventDataWithUniqueId {
@@ -335,7 +351,6 @@ export const BOARD_COLMNS: ReadonlyArray<string> = [
     'testing',
     'done',
 ];
-
 const KNOWN_URLS = {
     'github': 'https://github.com/mkloubert/vscode-kanban',
     'paypal': 'https://paypal.me/MarcelKloubert',
@@ -348,7 +363,8 @@ const KNOWN_URLS = {
 export class KanbanBoard extends vscode_helpers.DisposableBase {
     private _openOptions: OpenBoardOptions;
     private _panel: vscode.WebviewPanel;
-    private _saveBoardEventListener: SaveBoardEventListener[];
+    private _saveBoardEventListeners: SaveBoardEventListener[];
+    private _saveBoardFilterEventListeners: SaveBoardFilterEventListener[];
 
     /**
      * Gets the board file to use.
@@ -445,7 +461,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                 const CUSTOM_STYLE_FILE = GET_RES_URI('vscode-kanban.css');
 
                 return `
-<div class="modal" tabindex="-1" role="dialog" id="vsckb-add-card-modal">
+<div class="modal" tabindex="-1" role="dialog" id="vsckb-add-card-modal" data-keyboard="false">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -582,7 +598,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     </div>
 </div>
 
-<div class="modal" tabindex="-1" role="dialog" id="vsckb-edit-card-modal">
+<div class="modal" tabindex="-1" role="dialog" id="vsckb-edit-card-modal" data-keyboard="false">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -745,6 +761,35 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     </div>
 </div>
 
+<div class="modal" tabindex="-1" role="dialog" id="vsckb-card-filter-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Filter</h5>
+
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="vsckb-card-filter-expr">Expression</label>
+                    <textarea type="text" class="form-control" id="vsckb-card-filter-expr" placeholder="example: type == &quot;emergency&quot; or is_bug" rows="5"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-primary vsckb-apply-btn text-white">
+                    <i class="fa fa-filter" aria-hidden="true"></i>
+
+                    <span>Apply</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
                      : '' }
 `;
@@ -752,7 +797,11 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
             getHeaderButtons: () => {
                 return `
 <div id="vsckb-additional-header-btns">
-    <a class="btn btn-primary btn-sm text-white" id="vsckb-reload-board-btn" title="Reload Board">
+    <a class="btn btn-primary btn-sm text-white" id="vsckb-filter-cards-btn" title="Filter">
+        <i class="fa fa-filter" aria-hidden="true"></i>
+    </a>
+
+    <a class="btn btn-secondary btn-sm text-dark" id="vsckb-reload-board-btn" title="Reload Board">
         <i class="fa fa-refresh" aria-hidden="true"></i>
     </a>
 
@@ -814,14 +863,16 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
      * Initializes the board.
      */
     public async initialize() {
-        this._saveBoardEventListener = [];
+        this._saveBoardEventListeners = [];
+        this._saveBoardFilterEventListeners = [];
     }
 
     /**
      * Is invoked after the underlying panel has been disposed.
      */
     protected onDispose() {
-        this._saveBoardEventListener = [];
+        this._saveBoardEventListeners = [];
+        this._saveBoardFilterEventListeners = [];
 
         vscode_helpers.tryDispose(this._panel);
     }
@@ -886,7 +937,24 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
      */
     public onSaveBoard(listener: SaveBoardEventListener) {
         if (listener) {
-            this._saveBoardEventListener.push(
+            this._saveBoardEventListeners.push(
+                listener
+            );
+        }
+
+        return this;
+    }
+
+    /**
+     * Adds a listener for a 'save board' event.
+     *
+     * @param {SaveBoardEventListener} listener The listener to add.
+     *
+     * @return {this}
+     */
+    public onSaveBoardFilter(listener: SaveBoardFilterEventListener) {
+        if (listener) {
+            this._saveBoardFilterEventListeners.push(
                 listener
             );
         }
@@ -946,15 +1014,24 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
                     switch (msg.command) {
                         case 'log':
                             action = () => {
-                                try {
-                                    if (!_.isNil(msg.data) && !_.isNil(msg.data.message)) {
+                                if (!_.isNil(msg.data) && !_.isNil(msg.data.message)) {
+                                    try {
                                         console.log(
                                             JSON.parse(
                                                 vscode_helpers.toStringSafe(msg.data.message)
                                             )
                                         );
-                                    }
-                                } catch { }
+                                    } catch (e) { }
+
+                                    try {
+                                        vsckb.getLogger().debug(
+                                            JSON.parse(
+                                                vscode_helpers.toStringSafe(msg.data.message)
+                                            ),
+                                            'WebView'
+                                        );
+                                    } catch (e) { }
+                                }
                             };
                             break;
 
@@ -1036,7 +1113,7 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
                             action = async () => {
                                 const BOARD_TO_SAVE: Board = msg.data;
                                 if (BOARD_TO_SAVE) {
-                                    const LISTENERS = vscode_helpers.asArray(this._saveBoardEventListener);
+                                    const LISTENERS = vscode_helpers.asArray(this._saveBoardEventListeners);
                                     for (const L of LISTENERS) {
                                         try {
                                             await Promise.resolve(
@@ -1045,6 +1122,23 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
                                         } catch (e) {
                                             vsckb.showError(e);
                                         }
+                                    }
+                                }
+                            };
+                            break;
+
+                        case 'saveFilter':
+                            action = async () => {
+                                const FILTER = vscode_helpers.toStringSafe( msg.data );
+
+                                const LISTENERS = vscode_helpers.asArray(this._saveBoardFilterEventListeners);
+                                for (const L of LISTENERS) {
+                                    try {
+                                        await Promise.resolve(
+                                            L(FILTER)
+                                        );
+                                    } catch (e) {
+                                        vsckb.showError(e);
                                     }
                                 }
                             };
@@ -1216,8 +1310,21 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
             }
         }
 
+        let filter: string;
+        try {
+            const LOAD_FILTER = this.openOptions.loadFilter;
+            if (LOAD_FILTER) {
+                filter = await Promise.resolve(
+                    LOAD_FILTER()
+                );
+            }
+        } catch (e) {
+            vsckb.showError(e);
+        }
+
         await this.postMessage('setBoard', {
             cards: loadedBoard,
+            filter: vscode_helpers.toStringSafe(filter),
             settings: this.openOptions.settings,
         });
     }
@@ -1258,6 +1365,10 @@ export async function openBoard(opts?: OpenBoardOptions) {
 
     if (opts.saveBoard) {
         NEW_BOARD.onSaveBoard(opts.saveBoard);
+    }
+
+    if (opts.saveFilter) {
+        NEW_BOARD.onSaveBoardFilter(opts.saveFilter);
     }
 
     await NEW_BOARD.open(opts);

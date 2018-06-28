@@ -21,6 +21,8 @@ import * as _ from 'lodash';
 import * as ChildProcess from 'child_process';
 import * as FSExtra from 'fs-extra';
 import * as Marked from 'marked';
+import * as Moment from 'moment';
+import * as OS from 'os';
 import * as Path from 'path';
 import * as vsckb_workspaces from './workspaces';
 import * as vscode from 'vscode';
@@ -101,13 +103,106 @@ export interface WebViewMessage {
     data?: any;
 }
 
+/**
+ * The name of the extension's directory inside the user's home directory.
+ */
+export const EXTENSION_DIR = '.vscode-kanban';
 let isDeactivating = false;
 const KEY_LAST_KNOWN_VERSION = 'vsckbLastKnownVersion';
+let logger: vscode_helpers.Logger;
 let packageFile: PackageFile;
 let workspaceWatcher: vscode_helpers.WorkspaceWatcherContext<vsckb_workspaces.Workspace>;
 
 export async function activate(context: vscode.ExtensionContext) {
     const WF = vscode_helpers.buildWorkflow();
+
+    // logger
+    WF.next(() => {
+        logger = vscode_helpers.createLogger((ctx) => {
+            const EXT_DIR = getExtensionDir();
+            if (!vscode_helpers.isDirectorySync(EXT_DIR)) {
+                return;
+            }
+
+            const LOGS_DIR = Path.join(EXT_DIR, '.logs');
+            if (!FSExtra.existsSync(LOGS_DIR)) {
+                FSExtra.mkdirsSync(LOGS_DIR);
+            }
+
+            if (!vscode_helpers.isDirectorySync(LOGS_DIR)) {
+                return;
+            }
+
+            let logType = ctx.type;
+            if (_.isNil(logType)) {
+                logType = vscode_helpers.LogType.Debug;
+            }
+
+            let time = ctx.time;
+            if (!Moment.isMoment(time)) {
+                time = Moment.utc();
+            }
+            time = vscode_helpers.asUTC(time);
+
+            let msg = `${vscode_helpers.LogType[logType].toUpperCase().trim()}`;
+
+            const TAG = vscode_helpers.normalizeString(
+                _.replace(
+                    vscode_helpers.normalizeString(ctx.tag),
+                    /\s/ig,
+                    '_'
+                )
+            );
+            if ('' !== TAG) {
+                msg += ' ' + TAG;
+            }
+
+            let logMsg: string;
+            if (ctx.message instanceof Error) {
+                logMsg = `${
+                    vscode_helpers.isEmptyString(ctx.message.name) ? '' : `(${ vscode_helpers.toStringSafe(ctx.message.name).trim() }) `
+                }${ vscode_helpers.toStringSafe(ctx.message.message) }`;
+            } else {
+                logMsg = vscode_helpers.toStringSafe(ctx.message);
+            }
+
+            if (vscode_helpers.LogType.Trace === ctx.type) {
+                const STACK = vscode_helpers.toStringSafe(
+                    (new Error()).stack
+                ).split("\n").filter(l => {
+                    return l.toLowerCase()
+                            .trim()
+                            .startsWith('at ');
+                }).join("\n");
+
+                logMsg += `\n\nStack:\n${STACK}`;
+            }
+
+            msg += ` - [${time.format('DD/MMM/YYYY:HH:mm:ss')} +0000] "${
+                _.replace(logMsg, /"/ig, '\\"')
+            }"${OS.EOL}`;
+
+            const LOG_FILE = Path.resolve(
+                Path.join(
+                    LOGS_DIR,
+                    `${time.format('YYYYMMDD')}.log`
+                )
+            );
+
+            FSExtra.appendFileSync(LOG_FILE, msg, 'utf8');
+        });
+    });
+
+    // extension directory
+    WF.next(async () => {
+        try {
+            await vscode_helpers.createDirectoryIfNeeded(
+                getExtensionDir()
+            );
+        } catch (e) {
+            showError(e);
+        }
+    });
 
     // package file
     WF.next(async () => {
@@ -293,6 +388,28 @@ export function deactivate() {
 }
 
 /**
+ * Returns the full path of the extension's directory.
+ *
+ * @return {string} The extension's directory.
+ */
+export function getExtensionDir() {
+    return Path.resolve(
+        Path.join(
+            OS.homedir(), EXTENSION_DIR
+        )
+    );
+}
+
+/**
+ * Returns the global logger.
+ *
+ * @return {vscode_helpers.Logger} The logger.
+ */
+export function getLogger() {
+    return logger;
+}
+
+/**
  * Returns all possible resource URIs for web views.
  *
  * @return {vscode.Uri[]} The list of URIs.
@@ -429,12 +546,32 @@ export function open(target: string, opts?: OpenOptions): Promise<ChildProcess.C
 }
 
 /**
+ * Saves data to a file and creates the directory, if needed.
+ *
+ * @param {string} path The path to the file.
+ * @param {any} data The data to save.
+ */
+export async function saveToFile(path: string, data: any) {
+    path = vscode_helpers.toStringSafe( path );
+
+    await vscode_helpers.createDirectoryIfNeeded(
+        Path.dirname( path )
+    );
+
+    await FSExtra.writeFile(path, data);
+}
+
+/**
  * Shows an error.
  *
  * @param {any} err The error to show.
  */
 export async function showError(err: any) {
     if (!_.isNil(err)) {
+        getLogger().trace(
+            err, 'showError()'
+        );
+
         return await vscode.window.showErrorMessage(
             `[ERROR] '${ vscode_helpers.toStringSafe(err) }'`
         );

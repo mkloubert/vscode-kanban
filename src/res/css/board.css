@@ -1,7 +1,8 @@
 
 #vsckb-add-card-modal .modal-footer .btn .fa,
 #vsckb-edit-card-modal .modal-footer .btn .fa,
-#vsckb-card-details-modal .modal-footer .btn .fa {
+#vsckb-card-details-modal .modal-footer .btn .fa,
+#vsckb-card-filter-modal .modal-footer .btn .fa {
     margin-right: 4px;
 }
 

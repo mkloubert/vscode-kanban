@@ -21,6 +21,30 @@ function vsckb_apply_mermaid(element) {
                  element.find('.vsckb-mermaid'));
 }
 
+function vsckb_as_local(time) {
+    if (time) {
+        if (time.isValid()) {
+            if (!time.isLocal()) {
+                time = time.local();
+            }
+        }
+    }
+
+    return time;
+}
+
+function vsckb_as_utc(time) {
+    if (time) {
+        if (time.isValid()) {
+            if (!time.isUTC()) {
+                time = time.utc();
+            }
+        }
+    }
+
+    return time;
+}
+
 function vsckb_clone(val) {
     if (val) {
         val = JSON.parse(
@@ -29,6 +53,148 @@ function vsckb_clone(val) {
     }
 
     return val;
+}
+
+function vsckb_does_match(expr, opts) {
+    if (arguments.length < 2) {
+        opts = {};
+    }
+
+    let funcs = {
+        concat: function() {
+            let result = '';
+            for (let i = 0; i < arguments.length; i++) {
+                result += vsckb_to_string(arguments[i]);
+            }
+
+            return result;
+        },
+        contains: (val, search) => {
+            val = vsckb_to_string(val).toLowerCase();
+            search = vsckb_to_string(search).toLowerCase();
+
+            return val.indexOf(search) > -1;
+        },
+        debug: function(val, result) {
+            if (arguments.length < 2) {
+                result = true;
+            }
+
+            vsckb_log(val);
+            return result;
+        },
+        float: (val) => {
+            return parseFloat(
+                vsckb_normalize_str(val).trim()
+            );
+        },
+        int: (val) => {
+            return parseInt(
+                vsckb_normalize_str(val).trim()
+            );
+        },
+        integer: (val) => {
+            return parseInt(
+                vsckb_normalize_str(val).trim()
+            );
+        },
+        is_empty: (val) => {
+            return '' === vsckb_to_string(val).trim();
+        },
+        is_nan: (val, asInt) => {
+            val = vsckb_to_string(val).trim();
+            asInt = !!asInt;
+
+            return isNaN(
+                asInt ? parseInt(val) : parseFloat(val)
+            );
+        },
+        is_nil: (val) => {
+            return vsckb_is_nil(val);
+        },
+        norm: (val) => {
+            return vsckb_normalize_str(val);
+        },
+        normalize: (val) => {
+            return vsckb_normalize_str(val);
+        },
+        number: (val) => {
+            return parseFloat(
+                vsckb_normalize_str(val).trim()
+            );
+        },
+        regex: function(val, pattern, flags) {
+            if (arguments.length > 2) {
+                flags = vsckb_to_string(flags);
+            }
+
+            val = vsckb_to_string(val);
+            pattern = vsckb_to_string(pattern);
+
+            return RegExp(pattern, flags).test( val );
+        },
+        str: (val) => {
+            return vsckb_to_string(val);
+        },
+        str_invoke: function(val, funcs) {
+            val = vsckb_to_string(val);
+
+            const ARGS = [];
+            for (i = 2; i < arguments.length; i++) {
+                ARGS.push( arguments[i] );
+            }
+
+            const FUNCS = vsckb_to_string(funcs).split(',').map(f => {
+                return f.trim();
+            }).filter(f => '' !== f);
+
+            for (const F of FUNCS) {
+                val = val[F].apply(val, ARGS);
+            }
+
+            return val;
+        },
+        unix: function(val, isUTC) {
+            if (arguments.length < 2) {
+                isUTC = true;
+            }
+            isUTC = !!isUTC;
+
+            val = vsckb_to_string(val);
+
+            const TIME = isUTC ? moment.utc(val) : moment(val);
+            if (TIME.isValid()) {
+                return TIME.unix();
+            }
+
+            return false;
+        }
+    };
+    if (!vsckb_is_nil(opts.funcs)) {
+        for (const P in opts.funcs) {
+            funcs[ P ] = opts.funcs[ P ];
+        }
+    }
+
+    let values = {};
+    if (!vsckb_is_nil(opts.values)) {
+        for (const P in opts.values) {
+            values[ P ] = opts.values[ P ];
+        }
+    }
+
+    try {
+        expr = vsckb_to_string(expr);
+        if ('' !== expr.trim()) {
+            const FILTER = compileExpression(expr, funcs);
+
+            return FILTER(values);
+        }
+    } catch (e) {
+        vsckb_log('vsckb_does_match().error: ' + vsckb_to_string(e));
+    }
+
+    return true;
 }
 
 function vsckb_external_url(url, text) {

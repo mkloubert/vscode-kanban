@@ -173,6 +173,7 @@ export function generateHeader(opts: GenerateHeaderOptions) {
         <link rel="stylesheet" href="${ opts.getResourceUri('css/mermaid/mermaid.dark.css') }">
         <link rel="stylesheet" href="${ opts.getResourceUri('css/bootstrap.min.css') }" vsckb-style="bootstrap">
 
+        <script src="${ opts.getResourceUri('js/filtrex.js') }"></script>
         <script src="${ opts.getResourceUri('js/moment-with-locales.min.js') }"></script>
         <script src="${ opts.getResourceUri('js/highlight.pack.js') }"></script>
         <script src="${ opts.getResourceUri('js/codemirror/codemirror.js') }"></script>

@@ -219,6 +219,7 @@ export type TrackTimeEventArguments = EventScriptFunctionArguments & CanSetCardT
 const BOARD_FILENAME = 'vscode-kanban.json';
 const BOARD_CARD_EXPORT_FILE_EXT = 'card.md';
 const EVENT_TRACK_TIME = 'track_time';
+const FILTER_FILENAME = 'vscode-kanban.filter';
 const SCRIPT_FILENAME = 'vscode-kanban.js';
 
 /**
@@ -336,6 +337,13 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
             this.boardFile.fsPath
         );
 
+        const FILTER_FILE = Path.resolve(
+            Path.join(
+                Path.dirname(KANBAN_FILE),
+                FILTER_FILENAME
+            )
+        );
+
         const VSCODE_DIR = Path.resolve(
             Path.dirname(
                 KANBAN_FILE
@@ -383,13 +391,23 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
             ],
             fileResolver: () => this.boardFile,
             git: await this.tryCreateGitClient(),
+            loadFilter: async () => {
+                try {
+                    if (await vscode_helpers.isFile(FILTER_FILE, false)) {
+                        return await FSExtra.readFile(FILTER_FILE, 'utf8');
+                    }
+                } catch (e) {
+                    this.showError(e);
+                }
+
+                return '';
+            },
             noScmUser: CFG.noScmUser,
             noSystemUser: CFG.noSystemUser,
             raiseEvent: async (ctx) => {
                 await this.raiseEvent(ctx);
             },
             saveBoard: async (board) => {
-                // save board
                 try {
                     await saveBoardTo(
                         board,
@@ -433,6 +451,16 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                     } catch (e) {
                         vsckb.showError(e);
                     }
+                }
+            },
+            saveFilter: async (filter) => {
+                try {
+                    await vsckb.saveToFile(
+                        FILTER_FILE,
+                        new Buffer(filter, 'utf8')
+                    );
+                } catch (e) {
+                    vsckb.showError(e);
                 }
             },
             settings: {

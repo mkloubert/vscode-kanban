@@ -19,6 +19,9 @@
    * [Settings](#settings-)
    * [Markdown support](#markdown-support-)
    * [Diagrams and charts](#diagrams-and-charts-)
+   * [Filter](#filter-)
+     * [Constants](#constants-)
+     * [Functions](#functions-)
    * [Handle events](#handle-events-)
    * [Time tracking](#time-tracking-)
      * [Simple time tracking](#simple-time-tracking-)
@@ -26,8 +29,9 @@
      * [Custom time tracking](#custom-time-tracking-)
 3. [Customization](#customization-)
    * [CSS](#css-)
-4. [Support and contribute](#support-and-contribute-)
-5. [Related projects](#related-projects-)
+4. [Logs](#logs-)
+5. [Support and contribute](#support-and-contribute-)
+6. [Related projects](#related-projects-)
    * [vscode-helpers](#vscode-helpers-)
 
 Launch VS Code Quick Open (`Ctrl + P`), paste the following command, and press enter:
@@ -105,7 +109,7 @@ Code blocks are parsed by [highlight.js](https://highlightjs.org/) and all [prov
 
 Card descriptions can also include diagrams and charts, using a language parsed and rendered by [mermaid](https://github.com/knsv/mermaid).
 
-Those diagram / char descriptions has to be put into a Markdown code block, which uses `mermaid` as language:
+Those diagram / chart descriptions has to be put into a Markdown code block, which uses `mermaid` as language:
 
     Example graph:
     
@@ -116,6 +120,71 @@ Those diagram / char descriptions has to be put into a Markdown code block, whic
         B-->D;
         C-->D;
     ```
+
+### Filter [[&uarr;](#how-to-use-)]
+
+![Demo 8](https://raw.githubusercontent.com/mkloubert/vscode-kanban/master/img/demo8.gif)
+
+Cards can be filtered by using a powerful language, provided by [filtrex](https://github.com/joewalnes/filtrex#expressions) library.
+
+### Constants [[&uarr;](#filter-)]
+
+| Name | Description | Example |
+| ---- | --------- | --------- |
+| `assigned_to` | The value that indicates where the current card is assigned to. | `assigned_to == "Marcel" or assigned_to == "Tanja"` |
+| `cat` | Short version of `category`. | `cat == "My Category"` |
+| `category` | Stores the unparsed category value of the current card. | `category == "My Category"` |
+| `description` | The description of the current card. | `description == "My description"` |
+| `details` | The details of the current card. | `details == "My details"` |
+| `id` | The ID of the card. | `id == "20180628102654_516121916_3f99e5abbe05420e1e5114d235ded3a2"` |
+| `is_bug` | Is `(true)` if card type is `Bug / issue`. | `not is_bug` |
+| `is_emerg` | Short version of `is_emergency`. | `is_emerg or is_bug` |
+| `is_emergency` | Is `(true)` if card type is `Emergency`. | `is_emergency or is_bug` |
+| `is_issue` | Alias of `is_bug`. | `is_bug or is_issue` |
+| `is_note` | Is `(true)` if card type is `Note / task`. | `not is_note`|
+| `is_task` | Alias of `is_note`. | `not is_task` |
+| `prio` | Short version of `priority`. | `prio > 10` |
+| `priority` | Stores the priority value. | `priority > 10` |
+| `no` | `(false)` | `no == false` |
+| `now` | The current local time as UNIX timestamp. | `now > 305413740` |
+| `tag` | The tag value. | `tag == "by MK"` |
+| `time` | The (creation) time of the card as UNIX timestamp (UTC). | `time > 305413740` |
+| `title` | The title of the card. | `title == "My card title"` |
+| `type` | The type of the card (lower case). | `type == "bug" or type == "emergency"` |
+| `utc` | The current UTC time as UNIX timestamp. | `utc > 305413740` |
+| `yes` | `(true)` | `yes == true` |
+
+### Functions [[&uarr;](#filter-)]
+
+| Name | Description | Example |
+| ---- | --------- | --------- |
+| `concat(...args)` | Handles arguments as strings and concats them to one string. | `concat(5, "9.1", 979) == "59.1979"` |
+| `contains(val, searchFor: string)` | Handles a value as a string and searches for a sub string (case insensitive). | `contains(assigned_to, "Marcel")` |
+| `debug(val, result? = true)` | Logs a value. | `debug( concat(title, ": ", id) )` |
+| `float(val)` | Converts a value to a float number. | `float("5.979") == 5.979` |
+| `int(val)` | Short version of `integer()`. | `int("5.979") == 5` |
+| `integer(val)` | Converts a value to an integer number. | `integer("5.979") == 5` |
+| `is_after(date, alsoSame?: bool = false)` | `(true)`, if a card has been created after a specific time. | `is_after("1979-09-05")` |
+| `is_assigned_to(val)` | `(true)`, if a card is assigned to someone (case insensitive). | `is_assigned_to("Marcel Kloubert")` |
+| `is_before(date, alsoSame?: bool = false)` | `(true)`, if a card has been created before a specific time. | `is_before("2019-09-05")` |
+| `is_cat(name: string)` | Short version of `is_category()`. | `is_cat("My category")` |
+| `is_category(name: string)` | `(true)`, if a card belongs to a specific category (case insensitive). | `is_category("My category")` |
+| `is_empty(val)` | Converts a value to a string and checks if value is empty or contains whitespace only. | `is_empty(assigned_to)` |
+| `is_nan(val, asInt?: bool = false)` | Checks if a value is NOT a number. | `is_nan(prio)` |
+| `is_nil(val)` | Checks if a value is `(null)` or `(undefined)`. | `is_nil(category)` |
+| `is_older(days: number, alsoSameDay?: bool = false)` | `(true)`, if a card is older than a specific number of days. | `is_older(30)` |
+| `is_younger(days: number, alsoSameDay?: bool = false)` | `(true)`, if a card is younger than a specific number of days. | `is_younger(30)` |
+| `norm(val)` | Short version of `normalize()`. | `norm(" Marcel Kloubert ") == ""` |
+| `normalize(val)` | Converts a value to a string and converts the characters to lower case by removing leading and ending whitespaces. | `norm(" Marcel Kloubert ") == "marcel lloubert"` |
+| `number(val)` | Alias of number. | `number("5.979") == 5.979` |
+| `regex(val, pattern: string, flags?: string)` | `(true)` if a value matches a regular expression. s. [RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | `regex(assigned_to, "^(marcel|tanja)", "i")` |
+| `str(val)` | Converts a value to a string. | `str(59.79) == "59.79"` |
+| `str_invoke(val, methods: string, ...args)` | Handles a value as string and invokes methods for it. s. [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String) | `str_invoke(assigned_to, "trim,toLowerCase") == "marcel" or str_invoke(assigned_to, "indexOf", 'Marcel') > -1` |
+| `unix(val, isUTC?: bool = true)` | Returns the UNIX timestamp of a date/time value. | `time > unix("1979-09-05 23:09:00")` |
+
+For more functions, s. [Expressions](https://github.com/joewalnes/filtrex#expressions).
+
+If a filter expression is invalid or its execution fails, a [log entry](#logs-) will be written.
 
 ### Handle events [[&uarr;](#how-to-use-)]
 
@@ -315,6 +384,10 @@ You also have to update the extension settings:
 If you want to style your board, you can create a file, called `vscode-kanban.css`, inside your `.vscode` sub folder of the underlying workspace or your home directory.
 
 Have a look at the files [board.css](https://github.com/mkloubert/vscode-kanban/blob/master/src/res/css/board.css) and [style.css](https://github.com/mkloubert/vscode-kanban/blob/master/src/res/css/style.css) to get an idea of the CSS classes, that are used.
+
+## Logs [[&uarr;](#table-of-contents)]
+
+Log files are stored inside the `.vscode-kanban/.logs` subfolder of the user's home directory, separated by day.
 
 ## Support and contribute [[&uarr;](#table-of-contents)]
 
