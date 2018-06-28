@@ -179,7 +179,7 @@ Cards can be filtered by using a powerful language, provided by [filtrex](https:
 | `number(val)` | Alias of number. | `number("5.979") == 5.979` |
 | `regex(val, pattern: string, flags?: string)` | `(true)` if a value matches a regular expression. s. [RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | `regex(assigned_to, "^(marcel|tanja)", "i")` |
 | `str(val)` | Converts a value to a string. | `str(59.79) == "59.79"` |
-| `str_invoke(val, methods: string, ...args)` | Handles a value as string and invokes methods for it. s. [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String) | `str_invoke(assigned_to, "trim,toLowerCase") == "marcel" or str_invoke(assigned_to, "indexOf", 'Marcel') > -1` |
+| `str_invoke(val, methods: string, ...args)` | Handles a value as string and invokes methods for it. s. [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String) | `str_invoke(assigned_to, "trim,toLowerCase") == "marcel" or str_invoke(assigned_to, "indexOf", "Marcel") > -1` |
 | `unix(val, isUTC?: bool = true)` | Returns the UNIX timestamp of a date/time value. | `time > unix("1979-09-05 23:09:00")` |
 
 For more functions, s. [Expressions](https://github.com/joewalnes/filtrex#expressions).
