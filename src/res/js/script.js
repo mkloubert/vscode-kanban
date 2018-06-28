@@ -435,7 +435,7 @@ jQuery(() => {
 });
 
 jQuery(() => {
-    jQuery('.vsckb-btn-with-known-url').on('click', function() {
+    jQuery('.vsckb-btn-with-known-url, .vsckb-with-known-url').on('click', function() {
         const BTN = jQuery(this);
 
         const URL_ID = vsckb_normalize_str( BTN.attr('vsckb-url') );

@@ -352,7 +352,9 @@ export const BOARD_COLMNS: ReadonlyArray<string> = [
     'done',
 ];
 const KNOWN_URLS = {
+    'filter-help': 'https://github.com/mkloubert/vscode-kanban#filter-',
     'github': 'https://github.com/mkloubert/vscode-kanban',
+    'markdown-help': 'https://github.com/showdownjs/showdown/wiki',
     'paypal': 'https://paypal.me/MarcelKloubert',
     'twitter': 'https://twitter.com/mjkloubert',
 };
@@ -559,6 +561,12 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         </div>
                     </div>
                 </form>
+
+                <div class="row">
+                    <div class="col col-12">
+                        <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="markdown-help">Markdown Help</a>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -696,6 +704,12 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         </div>
                     </div>
                 </form>
+
+                <div class="row">
+                    <div class="col col-12">
+                        <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="markdown-help">Markdown Help</a>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -775,7 +789,13 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
             <div class="modal-body">
                 <div class="form-group">
                     <label for="vsckb-card-filter-expr">Expression</label>
-                    <textarea type="text" class="form-control" id="vsckb-card-filter-expr" placeholder="example: type == &quot;emergency&quot; or is_bug" rows="5"></textarea>
+                    <textarea type="text" class="form-control" id="vsckb-card-filter-expr" placeholder="example: type == &quot;emergency&quot; or is_bug" rows="7"></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col col-12">
+                        <i class="fa fa-question-circle" aria-hidden="true"></i> <a href="#" class="vsckb-with-known-url" vsckb-url="filter-help">Open Help</a>
+                    </div>
                 </div>
             </div>
 
