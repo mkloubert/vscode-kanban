@@ -829,6 +829,7 @@ function vsckb_refresh_card_view(onAdded) {
                 description: GET_MARKDOWN_VALUE(card.description),
                 details: GET_MARKDOWN_VALUE(card.details),
                 'false': false,
+                id: card.id,
                 is_bug: IS_BUG,
                 is_emerg: IS_EMERGENCY,
                 is_emergency: IS_EMERGENCY,

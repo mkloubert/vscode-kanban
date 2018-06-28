@@ -160,7 +160,7 @@ Cards can be filtered by using a powerful language, provided by [filtrex](https:
 | ---- | --------- | --------- |
 | `concat(...args)` | Handles arguments as strings and concats them to one string. | `concat(5, "9.1", 979) == "59.1979"` |
 | `contains(val, searchFor: string)` | Handles a value as a string and searches for a sub string (case insensitive). | `contains(assigned_to, "Marcel")` |
-| `debug(val, result? = true)` | Logs a value. | `debug( concat(title, ": ", id) )` |
+| `debug(val, result? = true)` | [Logs](#logs-) a value. | `debug( concat(title, ": ", id) )` |
 | `float(val)` | Converts a value to a float number. | `float("5.979") == 5.979` |
 | `int(val)` | Short version of `integer()`. | `int("5.979") == 5` |
 | `integer(val)` | Converts a value to an integer number. | `integer("5.979") == 5` |
