@@ -1599,6 +1599,12 @@ jQuery(() => {
     WIN.on('shown.bs.modal', function (e) {
         jQuery('a[href="#vsckb-new-card-description-tab-pane"]').tab('show');
 
+        [ 'vsckb-new-card-details', 'vsckb-new-card-description' ].forEach((id) => {
+            vsckb_invoke_for_md_editor(id, (e) => {
+                e.editor.refresh();
+            });    
+        });
+
         TITLE_FIELD.focus();
     });
 });
@@ -1618,10 +1624,17 @@ jQuery(() => {
         }
 
         const TAB_PANE = jQuery('#' + paneToSelect);
+        const TEXTAREA = TAB_PANE.find('textarea');
 
         jQuery(`a[href="#${ TAB_PANE.attr('id') }"]`).tab('show');
 
-        TAB_PANE.find('textarea').focus();
+        [ 'vsckb-edit-card-description', 'vsckb-edit-card-details', TEXTAREA.attr('id') ].forEach((id) => {
+            vsckb_invoke_for_md_editor(id, (e) => {
+                e.editor.refresh();
+            });    
+        });
+
+        TEXTAREA.focus();
     });
 });
 
