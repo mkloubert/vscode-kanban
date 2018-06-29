@@ -576,7 +576,7 @@ function vsckb_open_card_detail_window(i, opts) {
 
             if (false !== columnBadge) {
                 columnBadge.addClass('font-weight-bold')
-                            .text( cardColumn );
+                           .text( cardColumn );
             }
         });
 
@@ -689,169 +689,172 @@ function vsckb_refresh_card_view(onAdded) {
     }
 
     const DISPLAY_FILTER = vsckb_to_string(cardDisplayFilter);
-    const DISPLAY_CARD = (card) => {
-        if (vsckb_is_nil(card)) {
-            return false;
-        }
-        
-        const NOW = moment.utc();
 
-        const GET_MARKDOWN_VALUE = (v) => {
-            if (!vsckb_is_nil(v)) {
-                if ('object' === typeof v) {
-                    v = v.content;
-                } else {
-                    v = v;
+    let displayCard;
+    if ('' === DISPLAY_FILTER.trim()) {
+        displayCard = () => {
+            return true;
+        };
+    } else {
+        displayCard = (card) => {
+            if (vsckb_is_nil(card)) {
+                return false;
+            }
+            
+            const NOW = moment.utc();
+
+            const GET_MARKDOWN_VALUE = (v) => {
+                if (!vsckb_is_nil(v)) {
+                    if ('object' === typeof v) {
+                        v = v.content;
+                    } else {
+                        v = v;
+                    }
+
+                    v = vsckb_to_string(v);
                 }
 
-                v = vsckb_to_string(v);
-            }
+                return v;
+            };
 
-            return v;
-        };
+            const TO_DATE = (t) => {
+                if (t) {
+                    if (t.isValid()) {
+                        t = moment.utc(t.format('YYYY-MM-DD') + ' 00:00:00',
+                                       'YYYY-MM-DD HH:mm:ss');
+                    }
+                }
 
-        const TO_DATE = (t) => {
-            if (t) {
-                if (t.isValid()) {
-                    t = moment.utc(t.format('YYYY-MM-DD') + ' 00:00:00',
-                                   'YYYY-MM-DD HH:mm:ss');
+                return t;
+            };
+
+            const CARD_TYPE = vsckb_normalize_str(card.type);
+            const IS_CATEGORY = (cat) => {
+                return vsckb_normalize_str(card.category) === vsckb_normalize_str(cat);
+            };
+            const IS_BUG = [ 'bug', 'issue' ].indexOf( CARD_TYPE ) > -1;
+            const IS_NOTE = [ '', 'note', 'task' ].indexOf( CARD_TYPE ) > -1;
+            const IS_EMERGENCY = [ 'emergency' ].indexOf( CARD_TYPE ) > -1;
+
+            let creationTime = false;
+            let localCreationTime = false;
+            {
+                const CARD_CREATION_TIME = vsckb_to_string( card.creation_time ).trim();
+                if ('' !== CARD_CREATION_TIME) {
+                    const TIME = moment( CARD_CREATION_TIME );
+                    if (TIME.isValid()) {
+                        creationTime = vsckb_as_utc( TIME );
+                        localCreationTime = vsckb_as_local( creationTime );
+                    }
                 }
             }
 
-            return t;
-        };
-
-        const CARD_TYPE = vsckb_normalize_str(card.type);
-        const IS_CATEGORY = (cat) => {
-            return vsckb_normalize_str(card.category) === vsckb_normalize_str(cat);
-        };
-        const IS_BUG = ['bug', 'issue'].indexOf( CARD_TYPE ) > -1;
-        const IS_NOTE = ['', 'note', 'task'].indexOf( CARD_TYPE ) > -1;
-        const IS_EMERGENCY = ['emergency'].indexOf( CARD_TYPE ) > -1;
-
-        let creationTime = false;
-        {
-            const CARD_CREATION_TIME = vsckb_to_string(card.creation_time).trim();
-            if ('' !== CARD_CREATION_TIME) {
-                const TIME = moment(CARD_CREATION_TIME);
-                if (TIME.isValid()) {
-                    creationTime = vsckb_as_utc( TIME );
-                }
+            let assignedTo;
+            if (card.assignedTo) {
+                assignedTo = card.assignedTo.name;
             }
-        }
 
-        let assignedTo;
-        if (card.assignedTo) {
-            assignedTo = card.assignedTo.name;
-        }
+            let prio = parseFloat(
+                vsckb_to_string(card.prio).trim()
+            );
+            if (isNaN(prio)) {
+                prio = 0;
+            }
 
-        let prio = parseFloat(
-            vsckb_to_string(card.prio).trim()
-        );
-        if (isNaN(prio)) {
-            prio = 0;
-        }
+            return vsckb_does_match(DISPLAY_FILTER, {
+                funcs: {
+                    is_after: (date, orEqual) => {
+                        date = vsckb_as_local(
+                            moment( vsckb_to_string(date) )
+                        );
 
-        return vsckb_does_match(DISPLAY_FILTER, {
-            funcs: {
-                is_after: (date, orEqual) => {
-                    date = vsckb_as_local(
-                        moment( vsckb_to_string(date) )
-                    );
-                    orEqual = !!orEqual;
-
-                    if (date.isValid()) {
-                        if (false !== creationTime) {
-                            const LOCAL_CREATION_TIME = vsckb_as_local(creationTime);
-
-                            return orEqual ? LOCAL_CREATION_TIME.isAfterOrSame( date )
-                                           : LOCAL_CREATION_TIME.isAfter( date );
+                        if (date.isValid()) {
+                            if (false !== localCreationTime) {
+                                return !!orEqual ? localCreationTime.isSameOrAfter( date )
+                                                 : localCreationTime.isAfter( date );
+                            }
                         }
-                    }
 
-                    return false;
-                },
-                is_assigned_to: (val) => {
-                    return vsckb_normalize_str(val) ===
-                           vsckb_normalize_str(assignedTo);
-                },
-                is_before: (date, orEqual) => {
-                    date = vsckb_as_utc(
-                        moment( vsckb_to_string(date) )
-                    );
-                    orEqual = !!orEqual;
+                        return false;
+                    },
+                    is_assigned_to: (val) => {
+                        return vsckb_normalize_str(val) === vsckb_normalize_str(assignedTo);
+                    },
+                    is_before: (date, orEqual) => {
+                        date = vsckb_as_local(
+                            moment( vsckb_to_string(date) )
+                        );
 
-                    if (date.isValid()) {
-                        if (false !== creationTime) {
-                            return orEqual ? creationTime.isBeforeOrSame( date )
-                                           : creationTime.isBefore( date );
+                        if (date.isValid()) {
+                            if (false !== localCreationTime) {
+                                return !!orEqual ? localCreationTime.isSameOrBefore( date )
+                                                 : localCreationTime.isBefore( date );
+                            }
                         }
-                    }
 
-                    return false;
+                        return false;
+                    },
+                    is_cat: IS_CATEGORY,
+                    is_category: IS_CATEGORY,
+                    is_older: (days, orEqual) => {
+                        days = parseFloat( vsckb_to_string(days).trim() );
+
+                        if (false !== creationTime) {
+                            const DIFF = TO_DATE(NOW).diff(TO_DATE(creationTime),
+                                                           'days');
+
+                            return !!orEqual ? DIFF >= days
+                                             : DIFF > days;
+                        }
+
+                        return false;
+                    },
+                    is_younger: (days, orEqual) => {
+                        days = parseFloat( vsckb_to_string(days).trim() );
+
+                        if (false !== creationTime) {
+                            const DIFF = TO_DATE(NOW).diff(TO_DATE(creationTime),
+                                                           'days');
+
+                            return !!orEqual ? DIFF <= days
+                                             : DIFF < days;
+                        }
+
+                        return false;
+                    }
                 },
-                is_cat: IS_CATEGORY,
-                is_category: IS_CATEGORY,
-                is_older: (days, orEqual) => {
-                    days = parseFloat( vsckb_to_string(days).trim() );
-                    orEqual = !!orEqual;
-
-                    if (false !== creationTime) {
-                        const DIFF = TO_DATE(NOW).diff(TO_DATE(creationTime),
-                                                       'days');
-
-                        return orEqual ? DIFF >= days
-                                       : DIFF > days;
-                    }
-
-                    return false;
-                },
-                is_younger: (days, orEqual) => {
-                    days = parseFloat( vsckb_to_string(days).trim() );
-                    orEqual = !!orEqual;
-
-                    if (false !== creationTime) {
-                        const DIFF = TO_DATE(NOW).diff(TO_DATE(creationTime),
-                                                       'days');
-
-                        return orEqual ? DIFF <= days
-                                       : DIFF < days;
-                    }
-
-                    return false;
+                values: {
+                    assigned_to: assignedTo,
+                    cat: card.category,
+                    category: card.category,
+                    description: GET_MARKDOWN_VALUE(card.description),
+                    details: GET_MARKDOWN_VALUE(card.details),
+                    'false': false,
+                    id: card.id,
+                    is_bug: IS_BUG,
+                    is_emerg: IS_EMERGENCY,
+                    is_emergency: IS_EMERGENCY,
+                    is_issue: IS_BUG,
+                    is_note: IS_NOTE,
+                    is_task: IS_NOTE,
+                    no: false,
+                    now: vsckb_as_local( NOW ).unix(),
+                    'null': null,
+                    prio: prio,
+                    priority: prio,
+                    tag: card.tag,
+                    time: false !== creationTime ? creationTime.unix()
+                                                 : false,
+                    title: card.title,
+                    'true': true,
+                    type: CARD_TYPE,
+                    'undefined': undefined,
+                    utc: NOW.unix(),
+                    yes: true
                 }
-            },
-            values: {
-                assigned_to: assignedTo,
-                cat: card.category,
-                category: card.category,
-                description: GET_MARKDOWN_VALUE(card.description),
-                details: GET_MARKDOWN_VALUE(card.details),
-                'false': false,
-                id: card.id,
-                is_bug: IS_BUG,
-                is_emerg: IS_EMERGENCY,
-                is_emergency: IS_EMERGENCY,
-                is_issue: IS_BUG,
-                is_note: IS_NOTE,
-                is_task: IS_NOTE,
-                no: false,
-                now: vsckb_as_local( NOW ).unix(),
-                'null': null,
-                prio: prio,
-                priority: prio,
-                tag: card.tag,
-                time: false !== creationTime ? creationTime.unix()
-                                             : false,
-                title: card.title,
-                'true': true,
-                type: CARD_TYPE,
-                'undefined': undefined,
-                utc: NOW.unix(),
-                yes: true
-            }
-        });
-    };
+            });
+        };
+    }
 
     for (const TYPE in allCards) {
         const CARD = jQuery(`#vsckb-card-${ TYPE }`);
@@ -878,6 +881,7 @@ function vsckb_refresh_card_view(onAdded) {
                                     '<div class="vsckb-buttons float-right" />' + 
                                     '</div>'  +
                                     '</div>');
+            NEW_ITEM.hide();
 
             const NEW_ITEM_TYPE = NEW_ITEM.find('.vsckb-kanban-card-type');
 
@@ -1107,8 +1111,8 @@ function vsckb_refresh_card_view(onAdded) {
                 });
             }
 
-            if (!DISPLAY_CARD(i)) {
-                NEW_ITEM.hide();
+            if (displayCard(i)) {
+                NEW_ITEM.show();
             }
         });
     }
