@@ -7,6 +7,13 @@ let nextKanbanCardId;
 let vsckb_update_card_interval = false;
 let vsckb_is_updating_card_creation_times = false;
 
+const DEFAULT_COLUMN_NAMES = {
+    'done': 'Done',
+    'in-progress': 'In Progress',
+    'testing': 'Testing',
+    'todo': 'Todo'
+};
+
 function vsckb_add_card_unique(cards, cardToAdd) {
     if (vsckb_is_nil(cardToAdd)) {
         return;
@@ -463,6 +470,30 @@ function vsckb_get_cards_sorted(type) {
     });
 }
 
+function vsckb_get_column_name(column) {
+    column = vsckb_normalize_str(column);
+
+    const SETTINGS = boardSettings;
+
+    let name;
+    if (SETTINGS) {
+        const ALL_COLUMN_SETTINGS = SETTINGS['columns'];
+        if (ALL_COLUMN_SETTINGS) {
+            const COL_SETTINGS = ALL_COLUMN_SETTINGS[column];
+            if (COL_SETTINGS) {
+                name = COL_SETTINGS.name;
+            }
+        }
+    }
+
+    name = vsckb_to_string(name).trim();
+    if ('' === name) {
+        name = DEFAULT_COLUMN_NAMES[column];
+    }
+
+    return name;
+}
+
 function vsckb_get_prio_val(field) {
     let prio = vsckb_to_string(
         field.val()
@@ -663,6 +694,8 @@ function vsckb_open_card_detail_window(i, opts) {
 }
 
 function vsckb_refresh_card_view(onAdded) {
+    vsckb_update_column_names();
+
     try {
         if (false !== vsckb_update_card_interval) {
             clearInterval(vsckb_update_card_interval);
@@ -1391,10 +1424,10 @@ function vsckb_update_card_item_footer(item, entry) {
     };
 
     const ADD_DONE_BTN = () => {
-        const DONE_BTN = jQuery('<a class="btn btn-sm" title="Move To \'Done\'">' + 
+        const DONE_BTN = jQuery('<a class="btn btn-sm">' + 
                                 '<i class="fa fa-check-circle" aria-hidden="true"></i>' + 
                                 '</a>');
-
+        DONE_BTN.attr('title', `Move To '${ vsckb_get_column_name('done') }'`);
         DONE_BTN.on('click', function() {
             MOVE_CARD('done');
         });
@@ -1403,9 +1436,10 @@ function vsckb_update_card_item_footer(item, entry) {
     };
 
     const ADD_IN_PROGRESS_BTN = (icon) => {
-        const IN_PROGRESS_BTN = jQuery('<a class="btn btn-sm" title="Move To \'In Progress\'">' + 
+        const IN_PROGRESS_BTN = jQuery('<a class="btn btn-sm">' + 
                                        '<i class="fa" aria-hidden="true"></i>' + 
                                        '</a>');
+        IN_PROGRESS_BTN.attr('title', `Move To '${ vsckb_get_column_name('in-progress') }'`);
         IN_PROGRESS_BTN.find('.fa')
                        .addClass(`fa-${ icon }`);
 
@@ -1417,10 +1451,10 @@ function vsckb_update_card_item_footer(item, entry) {
     };
 
     const ADD_TEST_BTN = () => {
-        const TEST_BTN = jQuery('<a class="btn btn-sm" title="Move To \'Testing\'">' + 
+        const TEST_BTN = jQuery('<a class="btn btn-sm">' + 
                                 '<i class="fa fa-heartbeat" aria-hidden="true"></i>' + 
                                 '</a>');
-        
+        TEST_BTN.attr('title', `Move To '${ vsckb_get_column_name('testing') }'`);
         TEST_BTN.on('click', function() {
             MOVE_CARD('testing');
         });
@@ -1438,9 +1472,10 @@ function vsckb_update_card_item_footer(item, entry) {
 
         case 'in-progress':
             {
-                const STOP_BTN = jQuery('<a class="btn btn-sm" title="Move To \'Todo\'">' + 
+                const STOP_BTN = jQuery('<a class="btn btn-sm">' + 
                                         '<i class="fa fa-stop-circle" aria-hidden="true"></i>' + 
                                         '</a>');
+                STOP_BTN.attr('title', `Move To '${ vsckb_get_column_name('todo') }'`);
                 STOP_BTN.on('click', function() {
                     MOVE_CARD('todo');
                 });
@@ -1462,9 +1497,10 @@ function vsckb_update_card_item_footer(item, entry) {
             {
                 ADD_TEST_BTN();
 
-                const REDO_BTN = jQuery('<a class="btn btn-sm" title="Move To \'In Progress\'">' + 
+                const REDO_BTN = jQuery('<a class="btn btn-sm">' + 
                                         '<i class="fa fa-refresh" aria-hidden="true"></i>' + 
                                         '</a>');
+                REDO_BTN.attr('title', `Move To '${ vsckb_get_column_name('in-progress') }'`);
                 REDO_BTN.on('click', function() {
                     MOVE_CARD('in-progress');
                 });
@@ -1489,6 +1525,15 @@ function vsckb_update_card_item_footer(item, entry) {
 
     if (isVisible) {
         ITEM_FOOTER.show();
+    }
+}
+
+function vsckb_update_column_names() {
+    for (const COL in DEFAULT_COLUMN_NAMES) {
+        const COL_NAME = vsckb_get_column_name(COL);
+
+        jQuery('#vsckb-card-' + COL).find('.vsckb-primary-card-header .vsckb-title')
+                                    .text( vsckb_to_string(COL_NAME).trim() );
     }
 }
 
@@ -1556,6 +1601,23 @@ jQuery(() => {
     const WIN = jQuery('#vsckb-clear-done-modal');
 
     jQuery('#vsckb-card-done .vsckb-buttons .vsckb-clear-btn').on('click', function() {
+        const WIN_TITLE = WIN.find('.modal-header .modal-title');
+        WIN_TITLE.html('');
+
+        const WIN_BODY = WIN.find('.modal-body');
+        WIN_BODY.html('');
+        
+        const NEW_TITLE = jQuery("<span>Clear '<strong />'?</span>");
+        NEW_TITLE.find('strong')
+                 .text( vsckb_get_column_name('done') );
+
+        const NEW_BODY = jQuery('<span>Do you really want to delete ALL cards in <strong />?</span>');
+        NEW_BODY.find('strong')
+                .text( vsckb_get_column_name('done') );
+            
+        NEW_TITLE.appendTo( WIN_TITLE );
+        NEW_BODY.appendTo( WIN_BODY );
+
         WIN.modal('show');
     });
 
@@ -1817,6 +1879,7 @@ jQuery(() => {
                         jQuery('#vsckb-card-filter-expr').val(
                             vsckb_to_string( cardDisplayFilter )
                         );
+
                         vsckb_refresh_card_view();
                     }
                     break;

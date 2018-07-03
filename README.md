@@ -28,6 +28,7 @@
      * [Toggl](#toggl-)
      * [Custom time tracking](#custom-time-tracking-)
 3. [Customization](#customization-)
+   * [Columns](#columns-)
    * [CSS](#css-)
 4. [Logs](#logs-)
 5. [Support and contribute](#support-and-contribute-)
@@ -69,6 +70,7 @@ Add a `kanban` section:
 | Name | Description |
 | ---- | --------- |
 | `cleanupExports` | Remove existing export files, before regenerate them. Default: `(true)` |
+| `columns` | Custom [column](#columns-) settings. |
 | `exportOnSave` | Export cards to external Markdown files on save or not. Default: `(false)` |
 | `exportPath` | The custom path where export files, like cards, should be stored. Relative paths will be mapped to the `.vscode` subfolder of the underlying workspace. Default: `.vscode` subfolder of the underlying workspace. |
 | `globals` | Custom data, which can be used inside the extension, like [event scripts](#handle-events-). |
@@ -380,6 +382,23 @@ You also have to update the extension settings:
 ```
 
 ## Customization [[&uarr;](#table-of-contents)]
+
+### Columns [[&uarr;](#customization-)]
+
+An example of setting up custom column names:
+
+```json
+{
+    "kanban": {
+        "columns": {
+            "done": "Finished",
+            "inProgress": "Work",
+            "testing": "Currently Testing",
+            "todo": "Ideas and TODOs"
+        }
+    }
+}
+```
 
 ### CSS [[&uarr;](#customization-)]
 

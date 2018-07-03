@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.19.0",
+    "version": "1.20.0",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -40,6 +40,28 @@
                             "description": "Remove existing export files, before regenerate them.",
                             "type": "boolean",
                             "default": true
+                        },
+                        "columns": {
+                            "description": "Column settings.",
+                            "type": "object",
+                            "properties": {
+                                "done": {
+                                    "description": "The custom (display) name for the column 'Done'.",
+                                    "type": "string"
+                                },
+                                "inProgress": {
+                                    "description": "The custom (display) name for the column 'In Progress'.",
+                                    "type": "string"
+                                },
+                                "testing": {
+                                    "description": "The custom (display) name for the column 'Testing'.",
+                                    "type": "string"
+                                },
+                                "todo": {
+                                    "description": "The custom (display) name for the column 'Todo'.",
+                                    "type": "string"
+                                }
+                            }
                         },
                         "exportOnSave": {
                             "description": "Export cards to external Markdown files on save or not.",

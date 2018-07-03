@@ -52,6 +52,27 @@ export interface Config extends vscode.WorkspaceConfiguration {
      */
     readonly cleanupExports?: boolean;
     /**
+     * Column settings.
+     */
+    readonly columns?: {
+        /**
+         * The custom (display) name for the column 'Done'.
+         */
+        readonly done?: string;
+        /**
+         * The custom (display) name for the column 'In Progress'.
+         */
+        readonly inProgress?: string;
+        /**
+         * The custom (display) name for the column 'Testing'.
+         */
+        readonly testing?: string;
+        /**
+         * The custom (display) name for the column 'Todo'.
+         */
+        readonly todo?: string;
+    };
+    /**
      * Export cards to external Markdown files on save or not.
      */
     readonly exportOnSave?: boolean;
@@ -381,6 +402,22 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
             title = `Workspace #${ this.folder.index }`;
         }
 
+        const COL_SETTINGS_DONE: vsckb_boards.ColumnSettings = {
+        };
+        const COL_SETTINGS_IN_PROGRESS: vsckb_boards.ColumnSettings = {
+        };
+        const COL_SETTINGS_TESTING: vsckb_boards.ColumnSettings = {
+        };
+        let COL_SETTINGS_TODO: vsckb_boards.ColumnSettings = {
+        };
+
+        if (CFG.columns) {
+            COL_SETTINGS_DONE.name = vscode_helpers.toStringSafe(CFG.columns.done).trim();
+            COL_SETTINGS_IN_PROGRESS.name = vscode_helpers.toStringSafe(CFG.columns.inProgress).trim();
+            COL_SETTINGS_TESTING.name = vscode_helpers.toStringSafe(CFG.columns.testing).trim();
+            COL_SETTINGS_TODO.name = vscode_helpers.toStringSafe(CFG.columns.todo).trim();
+        }
+
         await vsckb_boards.openBoard({
             additionalResourceRoots: [
                 vscode.Uri.file(
@@ -465,6 +502,12 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
             },
             settings: {
                 canTrackTime: this.canTrackTime,
+                columns: {
+                    done: COL_SETTINGS_DONE,
+                    'in-progress': COL_SETTINGS_IN_PROGRESS,
+                    testing: COL_SETTINGS_TESTING,
+                    todo: COL_SETTINGS_TODO,
+                },
                 hideTimeTrackingIfIdle: vscode_helpers.toBooleanSafe(CFG.noTimeTrackingIfIdle),
             },
             title: title,

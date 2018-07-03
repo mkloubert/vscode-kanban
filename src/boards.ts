@@ -17,6 +17,7 @@
 
 import * as _ from 'lodash';
 import * as FSExtra from 'fs-extra';
+import * as HtmlEntities from 'html-entities';
 import * as OS from 'os';
 import * as Path from 'path';
 import * as URL from 'url';
@@ -130,6 +131,27 @@ export interface BoardSettings {
      */
     canTrackTime?: boolean;
     /**
+     * Settings for columns.
+     */
+    columns?: {
+        /**
+         * Settings for 'Done' column.
+         */
+        done?: ColumnSettings;
+        /**
+         * Settings for 'In Progress' column.
+         */
+        'in-progress'?: ColumnSettings;
+        /**
+         * Settings for 'Testing' column.
+         */
+        testing?: ColumnSettings;
+        /**
+         * Settings for 'Todo' column.
+         */
+        todo?: ColumnSettings;
+    };
+    /**
      * Do not show 'track time' button, if a card is stored in 'Todo' or 'Done'.
      */
     hideTimeTrackingIfIdle?: boolean;
@@ -211,6 +233,16 @@ export interface ColumnClearedEventData {
      * The name of the column that has been cleared.
      */
     column: string;
+}
+
+/**
+ * Settings for a column.
+ */
+export interface ColumnSettings {
+    /**
+     * The display name for the column.
+     */
+    name?: string;
 }
 
 /**
@@ -380,8 +412,32 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     }
 
     private generateHTML() {
+        const HTML_ENC = new HtmlEntities.AllHtmlEntities();
+
         const GET_RES_URI = (p: string) => {
             return this.getResourceUri(p);
+        };
+
+        const GET_COLUMN_NAME = (column: string, defaultName: string) => {
+            let name: string;
+
+            if (!_.isNil(this.openOptions)) {
+                if (!_.isNil(this.openOptions.settings)) {
+                    if (!_.isNil(this.openOptions.settings.columns)) {
+                        const COL_SETTINGS: ColumnSettings = this.openOptions.settings.columns[column];
+                        if (!_.isNil(COL_SETTINGS)) {
+                            name = COL_SETTINGS.name;
+                        }
+                    }
+                }
+            }
+
+            name = vscode_helpers.toStringSafe(name).trim();
+            if ('' === name) {
+                name = vscode_helpers.toStringSafe(defaultName).trim();
+            }
+
+            return name;
         };
 
         return vsckb_html.generateHtmlDocument({
@@ -392,7 +448,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-dark bg-secondary vsckb-card" id="vsckb-card-todo">
                 <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-dark">
-                    <span class="vsckb-title">Todo</span>
+                    <span class="vsckb-title">${ HTML_ENC.encode( GET_COLUMN_NAME('todo', 'Todo') ) }</span>
 
                     <div class="vsckb-buttons float-right">
                         <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
@@ -408,7 +464,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-primary vsckb-card" id="vsckb-card-in-progress">
                 <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
-                    <span class="vsckb-title">In Progress</span>
+                    <span class="vsckb-title">${ HTML_ENC.encode( GET_COLUMN_NAME('in-progress', 'In Progress') ) }</span>
 
                     <div class="vsckb-buttons float-right">
                         <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
@@ -424,7 +480,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-warning vsckb-card" id="vsckb-card-testing">
                 <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
-                    <span class="vsckb-title">Testing</span>
+                    <span class="vsckb-title">${ HTML_ENC.encode( GET_COLUMN_NAME('testing', 'Testing') ) }</span>
 
                     <div class="vsckb-buttons float-right">
                         <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
@@ -440,7 +496,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-success vsckb-card" id="vsckb-card-done">
                 <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
-                    <span class="vsckb-title">Done</span>
+                    <span class="vsckb-title">${ HTML_ENC.encode( GET_COLUMN_NAME('done', 'Done') ) }</span>
 
                     <div class="vsckb-buttons float-right">
                         <a class="btn btn-sm vsckb-clear-btn" title="Clear ...">
@@ -740,7 +796,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header bg-warning text-white">
-                <h5 class="modal-title">Clear <strong>'Done'</strong>?</h5>
+                <h5 class="modal-title"></h5>
 
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
