@@ -61,6 +61,26 @@ function vsckb_does_match(expr, opts) {
     }
 
     let funcs = {
+        all: function(val) {
+            val = vsckb_normalize_str( val );
+            for (let i = 1; i < arguments.length; i++) {
+                if (val.indexOf( vsckb_normalize_str( arguments[i] ) ) < 0) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
+        any: function(val) {
+            val = vsckb_normalize_str( val );
+            for (let i = 1; i < arguments.length; i++) {
+                if (val.indexOf( vsckb_normalize_str( arguments[i] ) ) > -1) {
+                    return true;
+                }
+            }
+
+            return false;
+        },
         concat: function() {
             let result = '';
             for (let i = 0; i < arguments.length; i++) {

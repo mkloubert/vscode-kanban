@@ -12,7 +12,7 @@
             {
                 "name": "Resources",
                 "files": [
-                    "/src/res/**/*"
+                    "src/res/**/*"
                 ],
 
                 "deployOnChange": true,
@@ -29,11 +29,12 @@
                 "dir": "./out/res",
 
                 "mappings": {
-                    "/src/res/css/**/*": "/css",
-                    "/src/res/img/**/*": "/img",
-                    "/src/res/js/**/*": "/js"
+                    "src/res": "/",
+                    "src/res/**/*": "/"
                 }
             }
-        ]
+        ],
+
+        "useFastGlob": true
     }
 }

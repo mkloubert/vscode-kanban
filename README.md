@@ -158,6 +158,8 @@ Cards can be filtered by using a powerful language, provided by [filtrex](https:
 
 | Name | Description | Example |
 | ---- | --------- | --------- |
+| `all(val, ...args)` | Handles a value as string and checks if all string arguments can be found inside it (case insensitive). | `all(assigned_to, "kloubert", "Marcel")` |
+| `any(val, ...args)` | Handles a value as string and checks if any string argument can be found inside it (case insensitive). | `any(assigned_to, "Tanja", "Marcel")` |
 | `concat(...args)` | Handles arguments as strings and concats them to one string. | `concat(5, "9.1", 979) == "59.1979"` |
 | `contains(val, searchFor: string)` | Handles a value as a string and searches for a sub string (case insensitive). | `contains(assigned_to, "Marcel")` |
 | `debug(val, result? = true)` | [Logs](#logs-) a value. | `debug( concat(title, ": ", id) )` |
@@ -175,9 +177,9 @@ Cards can be filtered by using a powerful language, provided by [filtrex](https:
 | `is_older(days: number, alsoSameDay?: bool = false)` | `(true)`, if a card is older than a specific number of days. | `is_older(30)` |
 | `is_younger(days: number, alsoSameDay?: bool = false)` | `(true)`, if a card is younger than a specific number of days. | `is_younger(30)` |
 | `norm(val)` | Short version of `normalize()`. | `norm(" Marcel Kloubert ") == "marcel kloubert"` |
-| `normalize(val)` | Converts a value to a string and converts the characters to lower case by removing leading and ending whitespaces. | `norm(" Marcel Kloubert ") == "marcel kloubert"` |
+| `normalize(val)` | Converts a value to a string and converts the characters to lower case by removing leading and ending whitespaces. | `normalize(" Marcel Kloubert ") == "marcel kloubert"` |
 | `number(val)` | Alias of `float()`. | `number("5.979") == 5.979` |
-| `regex(val, pattern: string, flags?: string)` | `(true)` if a value matches a regular expression. s. [RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | `regex(assigned_to, "^(marcel|tanja)", "i")` |
+| `regex(val, pattern: string, flags?: string)` | `(true)` if a value matches a regular expression. s. [RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | `regex(assigned_to, "^(marcel\|tanja)", "i")` |
 | `str(val)` | Converts a value to a string. | `str(59.79) == "59.79"` |
 | `str_invoke(val, methods: string, ...args)` | Handles a value as string and invokes methods for it. s. [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String) | `str_invoke(assigned_to, "trim,toLowerCase") == "marcel" or str_invoke(assigned_to, "indexOf", "Marcel") > -1` |
 | `unix(val, isUTC?: bool = true)` | Returns the UNIX timestamp of a date/time value. | `time > unix("1979-09-05 23:09:00")` |
