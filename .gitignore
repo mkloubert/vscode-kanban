@@ -1,5 +1,6 @@
 out
 node_modules
+.vs
 .vscode-test/
 *.vsix
 /pushall.sh

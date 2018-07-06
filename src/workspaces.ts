@@ -29,6 +29,49 @@ import * as vscode from 'vscode';
 import * as vscode_helpers from 'vscode-helpers';
 
 /**
+ * A possible value for an argument, which represents a card.
+ */
+export type CardArgument = string | vsckb_boards.BoardCard;
+
+/**
+ * Arguments for an event script function, which can move the underlying card.
+ */
+export interface CanMove {
+    /**
+     * Moves the underlying card to 'Done' column.
+     *
+     * @param {MoveToArgument} [card] The custom card.
+     *
+     * @return {PromiseLike<boolean>} The promise that indicates if operation was successful or not.
+     */
+    moveToDone: (card?: CardArgument) => PromiseLike<boolean>;
+    /**
+     * Moves the underlying card to 'In Progress' column.
+     *
+     * @param {MoveToArgument} [card] The custom card.
+     *
+     * @return {PromiseLike<boolean>} The promise that indicates if operation was successful or not.
+     */
+    moveToInProgress: (card?: CardArgument) => PromiseLike<boolean>;
+    /**
+     * Moves the underlying card to 'Testing' column.
+     *
+     * @param {MoveToArgument} [card] The custom card.
+     *
+     * @return {PromiseLike<boolean>} The promise that indicates if operation was successful or not.
+     */
+    moveToTesting: (card?: CardArgument) => PromiseLike<boolean>;
+    /**
+     * Moves the underlying card to 'Todo' column.
+     *
+     * @param {MoveToArgument} [card] The custom card.
+     *
+     * @return {PromiseLike<boolean>} The promise that indicates if operation was successful or not.
+     */
+    moveToTodo: (card?: CardArgument) => PromiseLike<boolean>;
+}
+
+/**
  * Arguments for an event script function, which also can set
  * thet 'tag' property of the underlying card.
  */
@@ -37,16 +80,21 @@ export interface CanSetCardTag {
      * Sets value for the 'tag' property of the underlying card.
      *
      * @param {any} tag The data to set.
+     * @param {MoveToArgument} [card] The custom card.
      *
      * @return {PromiseLike<boolean>} The promise that indicates if operation was successful or not.
      */
-    setTag: (tag: any) => PromiseLike<boolean>;
+    setTag: (tag: any, card?: CardArgument) => PromiseLike<boolean>;
 }
 
 /**
  * Configuration data for the extension.
  */
 export interface Config extends vscode.WorkspaceConfiguration {
+    /**
+     * Indicates if a button should be shown in each card, which can execute a 'onExecute' function in 'vscode-kanban.js' file.
+     */
+    readonly canExecute?: boolean;
     /**
      * Remove existing export files, before regenerate them.
      */
@@ -117,23 +165,27 @@ export interface EventScriptModule {
     /**
      * Is raised after a card has been created.
      */
-    onCardCreated?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag>;
+    onCardCreated?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag & CanMove>;
     /**
      * Is raised after a card has been deleted.
      */
-    onCardDeleted?: EventScriptFunction<EventScriptFunctionArguments & HasTag>;
+    onCardDeleted?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag & CanMove>;
     /**
      * Is raised after a card has been moved.
      */
-    onCardMoved?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag>;
+    onCardMoved?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag & CanMove>;
     /**
      * Is raised after a card has been updated.
      */
-    onCardUpdated?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag>;
+    onCardUpdated?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & HasTag & CanMove>;
     /**
      * Is raised after a column has been cleared.
      */
-    onColumnCleared?: EventScriptFunction;
+    onColumnCleared?: EventScriptFunction<EventScriptFunctionArguments & CanSetCardTag & CanMove>;
+    /**
+     * Is raised if 'execute' button has been clicked.
+     */
+    onExecute?: EventScriptFunction<ExecuteCardEventArguments>;
     /**
      * Generic fallback.
      */
@@ -172,6 +224,10 @@ export interface EventScriptFunctionArguments {
      */
     globals: any;
     /**
+     * The underlying logger.
+     */
+    logger: vscode_helpers.Logger;
+    /**
      * The name of the event.
      */
     name: string;
@@ -188,7 +244,17 @@ export interface EventScriptFunctionArguments {
      * accross the extension, while the current session.
      */
     session: any;
+    /**
+     * Accesses the state object, which can share data
+     * accross the underlying workspace.
+     */
+    state: any;
 }
+
+/**
+ * Event argument for an 'execute' event.
+ */
+export type ExecuteCardEventArguments = EventScriptFunctionArguments & CanSetCardTag & HasTag & CanMove;
 
 interface ExportBoardCardsToOptions {
     board: vsckb_boards.Board;
@@ -235,7 +301,7 @@ export type TimeTrackingSettingValue = boolean | TimeTrackingSettings;
 /**
  * Event argument for a 'track time' event.
  */
-export type TrackTimeEventArguments = EventScriptFunctionArguments & CanSetCardTag & HasTag;
+export type TrackTimeEventArguments = EventScriptFunctionArguments & CanSetCardTag & HasTag & CanMove;
 
 const BOARD_FILENAME = 'vscode-kanban.json';
 const BOARD_CARD_EXPORT_FILE_EXT = 'card.md';
@@ -257,6 +323,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
     private _config: Config;
     private _configSrc: vscode_helpers.WorkspaceConfigSource;
     private _isReloadingConfig = false;
+    private readonly _STATE: any = {};
 
     /**
      * Initializes a new instance of that class.
@@ -501,6 +568,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                 }
             },
             settings: {
+                canExecute: vscode_helpers.toBooleanSafe( this.config.canExecute ),
                 canTrackTime: this.canTrackTime,
                 columns: {
                     done: COL_SETTINGS_DONE,
@@ -533,13 +601,11 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
         let func: Function;
         let options: any;
 
-        let setupUID = false;
-        let setupSetTag = false;
-        let setupTag = false;
+        let setupUID = true;
+        let setupTag = true;
 
         const SETUP_FOR_TRACK_TIME = () => {
             setupUID = true;
-            setupSetTag = true;
             setupTag = true;
         };
 
@@ -553,6 +619,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
             globals: vscode_helpers.cloneObject(
                 CFG.globals
             ),
+            logger: vsckb.getLogger(),
             name: context.name,
             require: (id) => {
                 return require(
@@ -560,6 +627,86 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                 );
             },
             session: vscode_helpers.SESSION,
+            state: this._STATE,
+        };
+
+        const GET_UID = (arg: CardArgument) => {
+            if (!_.isNil(arg)) {
+                let card: vsckb_boards.BoardCard;
+                if (_.isObject(arg)) {
+                    card = <any>arg;
+                } else {
+                    const UID = vscode_helpers.normalizeString(arg);
+                    if (!_.isNil(ARGS.data) && !_.isNil(ARGS.data.others)) {
+                        for (const COLUMN in ARGS.data.others) {
+                            const CARDS_OF_COLUMN = vscode_helpers.asArray<vsckb_boards.BoardCard>(
+                                ARGS.data.others[COLUMN]
+                            );
+
+                            for (const C of CARDS_OF_COLUMN) {
+                                if (C['__uid'] === UID) {
+                                    card = C;
+                                    break;
+                                }
+                            }
+
+                            if (!_.isNil(card)) {
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (_.isNil(card)) {
+                    throw new Error('Card not found');
+                }
+
+                return card['__uid'];
+            }
+
+            return ARGS['uid'];
+        };
+
+        const TRY_FIND_CARD = (uid: string): vsckb_boards.BoardCard => {
+            if (!_.isNil(ARGS.data)) {
+                // check for CURRENT card
+                if (!_.isNil(ARGS.data.card)) {
+                    if (uid === ARGS.data.card['__uid']) {
+                        return ARGS.data.card;
+                    }
+                }
+
+                // now check for OTHER cards
+                if (!_.isNil(ARGS.data.others)) {
+                    for (const COLUMN in ARGS.data.others) {
+                        const CARDS_OF_COLUMN = vscode_helpers.asArray<vsckb_boards.BoardCard>(
+                            ARGS.data.others[COLUMN]
+                        );
+
+                        for (const C of CARDS_OF_COLUMN) {
+                            if (uid === C['__uid']) {
+                                return C;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        const MOVE_TO = async (uid: string, column: string) => {
+            let result: boolean;
+            try {
+                result = await context.postMessage(
+                    'moveCardTo', {
+                        column: column,
+                        uid: uid,
+                    }
+                );
+            } catch {
+                result = false;
+            }
+
+            return result;
         };
 
         if (EVENT_TRACK_TIME === context.name) {
@@ -619,33 +766,28 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                 switch (context.name) {
                     case 'card_created':
                         func = SCRIPT_MODULE.onCardCreated;
-                        setupUID = true;
-                        setupSetTag = true;
-                        setupTag = true;
                         break;
 
                     case 'card_deleted':
                         func = SCRIPT_MODULE.onCardDeleted;
-                        setupUID = true;
-                        setupTag = true;
                         break;
 
                     case 'card_moved':
                         func = SCRIPT_MODULE.onCardMoved;
-                        setupUID = true;
-                        setupSetTag = true;
-                        setupTag = true;
                         break;
 
                     case 'card_updated':
                         func = SCRIPT_MODULE.onCardUpdated;
-                        setupUID = true;
-                        setupSetTag = true;
-                        setupTag = true;
                         break;
 
                     case 'column_cleared':
+                        setupUID = false;
+                        setupTag = false;
                         func = SCRIPT_MODULE.onColumnCleared;
+                        break;
+
+                    case 'execute_card':
+                        func = SCRIPT_MODULE.onExecute;
                         break;
 
                     case EVENT_TRACK_TIME:
@@ -660,6 +802,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
             }
         }
 
+        // ARGS.options
         ARGS.options = vscode_helpers.cloneObject(
             options
         );
@@ -667,6 +810,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
         if (setupTag) {
             // ARGS.tag
             Object.defineProperty(ARGS, 'tag', {
+                enumerable: true,
                 get: function () {
                     return this.data.card.tag;
                 }
@@ -676,34 +820,55 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
         if (setupUID) {
             // ARGS.uid
             Object.defineProperty(ARGS, 'uid', {
+                enumerable: true,
                 get: function () {
                     return this.data.card.__uid;
                 }
             });
         }
 
-        if (setupSetTag) {
-            // ARGS.setTag()
-            ARGS['setTag'] = async function(tag: any) {
-                const UID: string = this.uid;
+        // ARGS.setTag()
+        ARGS['setTag'] = async function(tag: any, card?: CardArgument) {
+            const UID: string = GET_UID(card);
 
-                let result: boolean;
-                try {
-                    result = await context.postMessage(
-                        'setCardTag', {
-                            tag: tag,
-                            uid: UID,
-                        }
-                    );
-                } catch {
-                    result = false;
+            let result: boolean;
+            try {
+                result = await context.postMessage(
+                    'setCardTag', {
+                        tag: tag,
+                        uid: UID,
+                    }
+                );
+            } catch {
+                result = false;
+            }
+
+            if (result) {
+                const CARD = TRY_FIND_CARD(UID);
+                if (CARD) {
+                    CARD.tag = tag;
                 }
+            }
 
-                if (result) {
-                    this.data.card.tag = tag;
-                }
+            return result;
+        };
 
-                return result;
+        // move cards
+        {
+            ARGS['moveToDone'] = function(card?: CardArgument) {
+                return MOVE_TO(GET_UID(card), 'done');
+            };
+
+            ARGS['moveToInProgress'] = function(card?: CardArgument) {
+                return MOVE_TO(GET_UID(card), 'in-progress');
+            };
+
+            ARGS['moveToTesting'] = function(card?: CardArgument) {
+                return MOVE_TO(GET_UID(card), 'testing');
+            };
+
+            ARGS['moveToTodo'] = function(card?: CardArgument) {
+                return MOVE_TO(GET_UID(card), 'todo');
             };
         }
 

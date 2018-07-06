@@ -214,7 +214,8 @@ function vsckb_edit_card(i, opts) {
             vsckb_raise_event('card_updated', {
                 card: i,
                 column: CARD_TYPE,
-                oldCard: oldCard
+                oldCard: oldCard,
+                others: vsckb_get_other_cards(i)
             });
         });
 
@@ -494,6 +495,27 @@ function vsckb_get_column_name(column) {
     return name;
 }
 
+function vsckb_get_other_cards(thisCard) {
+    const OTHER_CARDS = {};
+    vsckb_foreach_card((card, cardIndex, column) => {
+        if (!vsckb_is_nil(thisCard)) {
+            if (card['__uid'] === thisCard['__uid']) {
+                return;
+            }    
+        }
+
+        if (vsckb_is_nil(OTHER_CARDS[column])) {
+            OTHER_CARDS[column] = [];
+        }
+
+        OTHER_CARDS[column].push(
+            card
+        );
+    });
+
+    return OTHER_CARDS;
+}
+
 function vsckb_get_prio_val(field) {
     let prio = vsckb_to_string(
         field.val()
@@ -707,11 +729,16 @@ function vsckb_refresh_card_view(onAdded) {
 
     nextKanbanCardId = -1;
 
+    let canExecute = false;
     let canTrackTime = false;
     let hideTimeTrackingIfIdle = false;
 
     const BOARD_SETTINGS = boardSettings;
     if (BOARD_SETTINGS) {
+        if (!vsckb_is_nil(BOARD_SETTINGS.canExecute)) {
+            canExecute = !!BOARD_SETTINGS.canExecute;
+        }
+
         if (!vsckb_is_nil(BOARD_SETTINGS.canTrackTime)) {
             canTrackTime = !!BOARD_SETTINGS.canTrackTime;
         }
@@ -934,6 +961,23 @@ function vsckb_refresh_card_view(onAdded) {
                     .addClass( NEW_ITEM_COLORS.background )
                     .addClass( NEW_ITEM_COLORS.text );
 
+            // 'execute' button
+            if (canExecute) {
+                const EXECUTE_BTN = jQuery('<a class="btn btn-sm" title="Execute">' + 
+                                           '<i class="fa fa-bolt" aria-hidden="true"></i>' + 
+                                           '</a>');
+
+                EXECUTE_BTN.on('click', function() {
+                    vsckb_raise_event('execute_card', {
+                        card: i,
+                        column: CARD_TYPE,
+                        others: vsckb_get_other_cards(i)
+                    });
+                });
+
+                EXECUTE_BTN.appendTo( NEW_ITEM_TYPE );
+            }
+
             // track time button
             if (canTrackTime) {
                 let showTrackTimeButton = true;
@@ -952,7 +996,8 @@ function vsckb_refresh_card_view(onAdded) {
                     TRACK_TIME_BTN.on('click', function() {
                         vsckb_raise_event('track_time', {
                             card: i,
-                            column: CARD_TYPE
+                            column: CARD_TYPE,
+                            others: vsckb_get_other_cards(i)
                         });
                     });
 
@@ -992,15 +1037,10 @@ function vsckb_refresh_card_view(onAdded) {
                         
                         vsckb_save_board();
 
-                        vsckb_refresh_card_view((ctx) => {
-                            if (ctx.item !== i) {
-                                return;
-                            }
-
-                            vsckb_raise_event('card_deleted', {
-                                card: i,
-                                column: CARD_TYPE
-                            });
+                        vsckb_raise_event('card_deleted', {
+                            card: i,
+                            column: CARD_TYPE,
+                            others: vsckb_get_other_cards(i)
                         });
                         
                         WIN.modal('hide');
@@ -1418,6 +1458,7 @@ function vsckb_update_card_item_footer(item, entry) {
             vsckb_raise_event('card_moved', {
                 card: ctx.item,
                 from: CARD_TYPE,
+                others: vsckb_get_other_cards(ctx.item),
                 to: target
             });
         });        
@@ -1634,7 +1675,8 @@ jQuery(() => {
 
         vsckb_raise_event('column_cleared', {
             cards: CURRENT_LIST,
-            column: 'done'
+            column: 'done',
+            others: vsckb_get_other_cards()
         });
 
         vsckb_refresh_card_view();
@@ -1813,7 +1855,8 @@ jQuery(() => {
 
                 vsckb_raise_event('card_created', {
                     card: ctx.item,
-                    column: TYPE
+                    column: TYPE,
+                    others: vsckb_get_other_cards(ctx.item)
                 });
             });
 
@@ -1866,6 +1909,79 @@ jQuery(() => {
 
         try {
             switch (MSG.command) {
+                case 'moveCardTo':
+                    if (MSG.data) {
+                        const MOVE_DATA = MSG.data;
+
+                        let saveBoard = false;
+
+                        const ALL_CARDS = allCards;
+                        if (!vsckb_is_nil(ALL_CARDS)) {
+                            const UID = vsckb_to_string(MOVE_DATA.uid).trim();
+                            const TARGET_COLUMN = vsckb_normalize_str(MOVE_DATA.column);
+
+                            vsckb_foreach_card((card, i, sourceColumn) => {
+                                if (TARGET_COLUMN === sourceColumn) {
+                                    return;
+                                }
+
+                                if (card['__uid'] !== UID) {
+                                    return;
+                                }
+                                
+                                let cardListOfTargetColumn = ALL_CARDS[ TARGET_COLUMN ];
+                                if (vsckb_is_nil(cardListOfTargetColumn)) {
+                                    return;
+                                }
+                                
+                                let cardListOfSourceColumn = ALL_CARDS[ sourceColumn ];
+                                if (vsckb_is_nil(cardListOfSourceColumn)) {
+                                    cardListOfSourceColumn = [];
+                                }
+
+                                switch (TARGET_COLUMN) {
+                                    case 'done':
+                                    case 'in-progress':
+                                    case 'testing':
+                                    case 'todo':
+                                        {
+                                            ALL_CARDS[ TARGET_COLUMN ] = cardListOfTargetColumn.filter(cc => {
+                                                return cc['__uid'] !== UID;
+                                            });
+                                            ALL_CARDS[ TARGET_COLUMN ].push( card );
+
+                                            ALL_CARDS[ sourceColumn ] = cardListOfSourceColumn.filter(cc => {
+                                                return cc['__uid'] !== UID;
+                                            });
+
+                                            saveBoard = () => {
+                                                vsckb_save_board();
+
+                                                vsckb_refresh_card_view((ctx) => {
+                                                    if (ctx.item !== card) {
+                                                        return;
+                                                    }
+
+                                                    vsckb_raise_event('card_moved', {
+                                                        card: card,
+                                                        from: sourceColumn,
+                                                        others: vsckb_get_other_cards(card),
+                                                        to: TARGET_COLUMN
+                                                    });
+                                                });                
+                                            };
+                                        }
+                                        break;
+                                }
+                            }, ALL_CARDS);
+
+                            if (false !== saveBoard) {
+                                saveBoard();
+                            }
+                        }
+                    }
+                    break;
+
                 case 'setBoard':
                     {
                         allCards = MSG.data.cards;

@@ -69,6 +69,7 @@ Add a `kanban` section:
 
 | Name | Description |
 | ---- | --------- |
+| `canExecute` | Indicates if an execute button should be shown on every card, which invokes an `onExecute()` function inside the underlying `.vscode/vscode-kanban.js` script file (s. [Handle events](#handle-events-)). Default: `(false)` |
 | `cleanupExports` | Remove existing export files, before regenerate them. Default: `(true)` |
 | `columns` | Custom [column](#columns-) settings. |
 | `exportOnSave` | Export cards to external Markdown files on save or not. Default: `(false)` |
@@ -129,7 +130,7 @@ Those diagram / chart descriptions has to be put into a Markdown code block, whi
 
 Cards can be filtered by using a powerful language, provided by [filtrex](https://github.com/joewalnes/filtrex#expressions) library.
 
-### Constants [[&uarr;](#filter-)]
+#### Constants [[&uarr;](#filter-)]
 
 | Name | Description | Example |
 | ---- | --------- | --------- |
@@ -156,7 +157,7 @@ Cards can be filtered by using a powerful language, provided by [filtrex](https:
 | `utc` | The current UTC time as UNIX timestamp. | `utc > 305413740` |
 | `yes` | `(true)` | `yes == true` |
 
-### Functions [[&uarr;](#filter-)]
+#### Functions [[&uarr;](#filter-)]
 
 | Name | Description | Example |
 | ---- | --------- | --------- |
@@ -250,6 +251,15 @@ exports.onCardUpdated = async (args) => {
 // Is raised after a column has been cleared.
 exports.onColumnCleared = async (args) => {
     // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.columnclearedeventdata.html
+};
+
+// [OPTIONAL]
+// 
+// Is raised when an user clicks on a card's 'Execute' button.
+// This requires global extension / workspace setting 'canExecute' to be set to (true).
+exports.onExecute = async (args) => {
+    // args => https://mkloubert.github.io/vscode-kanban/interfaces/_workspaces_.eventscriptfunctionarguments.html
+    // args.data => s. https://mkloubert.github.io/vscode-kanban/interfaces/_boards_.executecardeventarguments.html
 };
 
 // [OPTIONAL]

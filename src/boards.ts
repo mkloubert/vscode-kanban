@@ -127,6 +127,10 @@ export type BoardCardContentValue = string | BoardCardContent;
  */
 export interface BoardSettings {
     /**
+     * Indicates to show an 'execute' button on each card or not.
+     */
+    canExecute?: boolean;
+    /**
      * Enable time tracking or not.
      */
     canTrackTime?: boolean;
@@ -989,23 +993,25 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
 
         let userName: string;
 
-        if (!vscode_helpers.toBooleanSafe(this.openOptions.noScmUser)) {
-            if (this.openOptions.git) {
-                // try get user name from Git
-                try {
-                    const GIT_FOLDER = Path.resolve(
-                        Path.join(this.openOptions.git.cwd, '.git')
-                    );
+        if (this.openOptions.git) {
+            try {
+                const GIT_FOLDER = Path.resolve(
+                    Path.join(this.openOptions.git.cwd, '.git')
+                );
 
-                    if (await vscode_helpers.isDirectory(GIT_FOLDER, false)) {
-                        // only, when git repo exists
+                if (await vscode_helpers.isDirectory(GIT_FOLDER, false)) {
+                    // only, if git repo exists
 
-                        userName = vscode_helpers.toStringSafe(
-                            this.openOptions.git.execSync([ 'config', 'user.name' ])
-                        ).trim();
+                    // try get username from Git?
+                    if (!vscode_helpers.toBooleanSafe(this.openOptions.noScmUser)) {
+                        try {
+                            userName = vscode_helpers.toStringSafe(
+                                this.openOptions.git.execSync([ 'config', 'user.name' ])
+                            ).trim();
+                        } catch { }
                     }
-                } catch { }
-            }
+                }
+            } catch { }
         }
 
         if (!vscode_helpers.toBooleanSafe(this.openOptions.noSystemUser)) {

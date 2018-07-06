@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.20.0",
+    "version": "1.21.0",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.23.0"
@@ -36,6 +36,11 @@
                     "type": "object",
                     "scope": "resource",
                     "properties": {
+                        "canExecute": {
+                            "description": "Indicates if a button should be shown in each card, which can execute a 'onExecute' function in 'vscode-kanban.js' file.",
+                            "type": "boolean",
+                            "default": false
+                        },
                         "cleanupExports": {
                             "description": "Remove existing export files, before regenerate them.",
                             "type": "boolean",
@@ -190,7 +195,7 @@
         "@types/lodash": "^4.14.110",
         "@types/marked": "^0.3.0",
         "@types/mocha": "^2.2.42",
-        "@types/node": "^7.0.66",
+        "@types/node": "^7.0.67",
         "@types/sanitize-filename": "^1.1.28",
         "tslint": "^5.8.0",
         "typescript": "2.8.3",
