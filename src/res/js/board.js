@@ -271,6 +271,18 @@ function vsckb_find_card_by_id(cardId) {
     return matchingCard;
 }
 
+function vsckb_find_next_simple_card_id() {
+    let lastID = 0;
+    vsckb_foreach_card((card) => {
+        const CARD_ID_NUM = parseInt(vsckb_to_string(card.id).trim());
+        if (!isNaN(CARD_ID_NUM)) {
+            lastID = Math.max(lastID, CARD_ID_NUM);
+        }
+    });
+
+    return lastID + 1;
+}
+
 function vsckb_find_parent_cards_of(childId) {
     childId = vsckb_to_string(childId);
     
@@ -1826,10 +1838,19 @@ jQuery(() => {
                 category = undefined;
             }
 
+            let simpleIDs;
+            if (boardSettings) {
+                simpleIDs = boardSettings.simpleIDs;
+            }
+
             let id = '';
-            id += CREATION_TIME.format('YYYYMMDDHHmmss') + '_';
-            id += Math.floor(Math.random() * 597923979) + '_';
-            id += vsckb_uuid().split('-').join('');
+            if (vsckb_to_bool(simpleIDs, true)) {
+                id += vsckb_find_next_simple_card_id();
+            } else {
+                id += CREATION_TIME.format('YYYYMMDDHHmmss') + '_';
+                id += Math.floor(Math.random() * 597923979) + '_';
+                id += vsckb_uuid().split('-').join('');    
+            }
 
             const NEW_CARD = {
                 assignedTo: vsckb_get_assigned_to_val( ASSIGNED_TO_FIELD ),

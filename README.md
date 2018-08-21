@@ -80,6 +80,7 @@ Add a `kanban` section:
 | `noSystemUser` | Do not detect username of operating system. Default: `(false)` |
 | `noTimeTrackingIfIdle` | Do not show 'track time' button, if a card is stored in 'Todo' or 'Done'. Default: `(false)` |
 | `openOnStartup` | Opens a board, after a workspace (folder) has been loaded. Default: `(false)` |
+| `simpleIDs` | Use integer values as IDs for cards instead. Default: `(true)` |
 | `trackTime` | Settings for [time tracking](#time-tracking-) feature. Default: `(false)` |
 
 ### Markdown support [[&uarr;](#how-to-use-)]

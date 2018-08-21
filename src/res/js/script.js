@@ -362,6 +362,18 @@ function vsckb_sort_by(arr, sorter) {
     });
 }
 
+function vsckb_to_bool(val, defaultVal) {
+    if (arguments.length < 2) {
+        defaultVal = false;
+    }
+
+    if (vsckb_is_nil(val)) {
+        return !!defaultVal;
+    }
+
+    return !!val;
+}
+
 function vsckb_to_pretty_time(time) {
     const NOW = moment.utc();
 

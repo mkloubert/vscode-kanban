@@ -153,6 +153,10 @@ export interface Config extends vscode.WorkspaceConfiguration {
      */
     readonly openOnStartup?: boolean;
     /**
+     * Use integer values as IDs for cards instead.
+     */
+    readonly simpleIDs?: boolean;
+    /**
      * Enable time tracking or not.
      */
     readonly trackTime?: TimeTrackingSettingValue;
@@ -577,6 +581,7 @@ export class Workspace extends vscode_helpers.WorkspaceBase {
                     todo: COL_SETTINGS_TODO,
                 },
                 hideTimeTrackingIfIdle: vscode_helpers.toBooleanSafe(CFG.noTimeTrackingIfIdle),
+                simpleIDs: vscode_helpers.toBooleanSafe(CFG.simpleIDs, true),
             },
             title: title,
         });

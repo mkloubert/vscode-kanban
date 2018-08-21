@@ -159,6 +159,10 @@ export interface BoardSettings {
      * Do not show 'track time' button, if a card is stored in 'Todo' or 'Done'.
      */
     hideTimeTrackingIfIdle?: boolean;
+    /**
+     * Use integer values as IDs for cards instead.
+     */
+    simpleIDs?: boolean;
 }
 
 /**
@@ -1384,6 +1388,24 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
                 card[ property ] = cardContent;
             };
 
+            const FIND_NEXT_SIMPLE_CARD_ID = () => {
+                let lastID = 0;
+                for (const BC of BOARD_COLMNS) {
+                    const CARDS: BoardCard[] = vscode_helpers.asArray( loadedBoard[ BC ] );
+
+                    for (const C of CARDS) {
+                        if (!vscode_helpers.isEmptyString(C.id)) {
+                            const CARD_ID_NUM = parseInt(vscode_helpers.toStringSafe(C.id).trim());
+                            if (!isNaN(CARD_ID_NUM)) {
+                                lastID = Math.max(lastID, CARD_ID_NUM);
+                            }
+                        }
+                    }
+                }
+
+                return lastID + 1;
+            };
+
             for (const BC of BOARD_COLMNS) {
                 const CARDS: BoardCard[] = loadedBoard[ BC ]
                                          = vscode_helpers.asArray( loadedBoard[ BC ] );
@@ -1404,7 +1426,16 @@ ${ CUSTOM_STYLE_FILE ? `<link rel="stylesheet" href="${ CUSTOM_STYLE_FILE }">`
 
                         prefix += Math.floor(Math.random() * 597923979) + '_';
 
-                        C.id = `${ prefix }${ vscode_helpers.uuid().split('-').join('') }`;
+                        let simpleIDs: boolean;
+                        if (this.openOptions.settings) {
+                            simpleIDs = this.openOptions.settings.simpleIDs;
+                        }
+
+                        if (vscode_helpers.toBooleanSafe(simpleIDs, true)) {
+                            C.id = '' + FIND_NEXT_SIMPLE_CARD_ID();
+                        } else {
+                            C.id = `${ prefix }${ vscode_helpers.uuid().split('-').join('') }`;
+                        }
                     }
 
                     SET_CARD_CONTENT(C, 'description');
