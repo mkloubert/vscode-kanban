@@ -395,7 +395,7 @@ const KNOWN_URLS = {
     'filter-help': 'https://github.com/mkloubert/vscode-kanban#filter-',
     'github': 'https://github.com/mkloubert/vscode-kanban',
     'mermaid-help': 'https://mermaidjs.github.io',
-    'markdown-help': 'https://github.com/showdownjs/showdown/wiki',
+    'markdown-help': 'https://github.com/showdownjs/showdown/wiki/Showdown\'s-Markdown-syntax',
     'paypal': 'https://paypal.me/MarcelKloubert',
     'twitter': 'https://twitter.com/mjkloubert',
 };
