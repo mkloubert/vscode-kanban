@@ -32,6 +32,7 @@
    * [CSS](#css-)
 4. [Logs](#logs-)
 5. [Support and contribute](#support-and-contribute-)
+   * [Contributors](#contributors-)
 6. [Related projects](#related-projects-)
    * [vscode-helpers](#vscode-helpers-)
 
@@ -438,6 +439,10 @@ To work with the code:
 * make a [pull request](https://github.com/mkloubert/vscode-kanban/pulls)
 
 The complete API documentation can be found [here](https://mkloubert.github.io/vscode-kanban/).
+
+### Contributors [[&uarr;](#support-and-contribute-)]
+
+* [Philippe Miossec](https://github.com/pmiossec)
 
 ## Related projects [[&uarr;](#table-of-contents)]
 

@@ -2,10 +2,10 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.22.0",
+    "version": "1.23.0",
     "publisher": "mkloubert",
     "engines": {
-        "vscode": "^1.23.0"
+        "vscode": "^1.28.0"
     },
     "categories": [
         "Other"
@@ -197,10 +197,10 @@
     "devDependencies": {
         "@types/fs-extra": "5.0.2",
         "@types/html-entities": "^1.2.16",
-        "@types/lodash": "^4.14.116",
+        "@types/lodash": "^4.14.117",
         "@types/marked": "^0.3.0",
         "@types/mocha": "^2.2.42",
-        "@types/node": "^7.0.69",
+        "@types/node": "^7.10.0",
         "@types/sanitize-filename": "^1.1.28",
         "tslint": "^5.11.0",
         "typescript": "2.8.3",
@@ -209,8 +209,8 @@
     "dependencies": {
         "fs-extra": "^6.0.1",
         "html-entities": "^1.2.1",
-        "humanize-duration": "^3.15.1",
-        "lodash": "^4.17.10",
+        "humanize-duration": "^3.15.3",
+        "lodash": "^4.17.11",
         "marked": "^0.4.0",
         "sanitize-filename": "^1.6.1",
         "vscode-helpers": "^2.12.0"
