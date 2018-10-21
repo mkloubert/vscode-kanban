@@ -36,6 +36,8 @@
 6. [Related projects](#related-projects-)
    * [vscode-helpers](#vscode-helpers-)
 
+## Install [[&uarr;](#install)]
+
 Launch VS Code Quick Open (`Ctrl + P`), paste the following command, and press enter:
 
 ```bash
