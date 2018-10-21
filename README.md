@@ -36,7 +36,7 @@
 6. [Related projects](#related-projects-)
    * [vscode-helpers](#vscode-helpers-)
 
-## Install [[&uarr;](#install)]
+## Install [[&uarr;](#table-of-contents)]
 
 Launch VS Code Quick Open (`Ctrl + P`), paste the following command, and press enter:
 
@@ -444,6 +444,7 @@ The complete API documentation can be found [here](https://mkloubert.github.io/v
 
 ### Contributors [[&uarr;](#support-and-contribute-)]
 
+* [Hans De Mulder](https://github.com/Styxxy)
 * [Philippe Miossec](https://github.com/pmiossec)
 
 ## Related projects [[&uarr;](#table-of-contents)]
