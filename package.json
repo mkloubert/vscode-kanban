@@ -195,10 +195,10 @@
     },
     "readmeFilename": "README.md",
     "devDependencies": {
-        "@types/fs-extra": "^5.0.5",
+        "@types/fs-extra": "5.0.2",
         "@types/html-entities": "^1.2.16",
         "@types/lodash": "^4.14.121",
-        "@types/marked": "^0.6.1",
+        "@types/marked": "0.3.0",
         "@types/mocha": "^5.2.6",
         "@types/node": "10.1.4",
         "@types/sanitize-filename": "^1.1.28",
