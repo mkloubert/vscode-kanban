@@ -21,7 +21,7 @@ import * as HtmlEntities from 'html-entities';
 const HumanizeDuration = require('humanize-duration');
 import * as Moment from 'moment';
 import * as Path from 'path';
-import * as SanitizeFilename from 'sanitize-filename';
+const SanitizeFilename = require('sanitize-filename');
 import * as vsckb from './extension';
 import * as vsckb_boards from './boards';
 import * as vsckb_toggl from './toggl';
