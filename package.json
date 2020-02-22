@@ -2,7 +2,7 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.27.0",
+    "version": "1.27.1",
     "publisher": "mkloubert",
     "engines": {
         "vscode": "^1.42.0"
@@ -170,6 +170,7 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
+        "build": "(rm -r ./out || true) && (tsc -p ./) && (mkdir \"./out/res\") && (cp -r ./src/res/* ./out/res)",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
