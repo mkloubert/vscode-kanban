@@ -2,10 +2,10 @@
     "name": "vscode-kanban",
     "displayName": "Kanban",
     "description": "Kanban board for Visual Studio Code.",
-    "version": "1.26.2",
+    "version": "1.27.0",
     "publisher": "mkloubert",
     "engines": {
-        "vscode": "^1.38.0"
+        "vscode": "^1.42.0"
     },
     "categories": [
         "Other"
@@ -173,7 +173,8 @@
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+        "test": "npm run compile && node ./node_modules/vscode/bin/test",
+        "publish": "node ./publish.js"
     },
     "icon": "icon.png",
     "badges": [
@@ -197,21 +198,22 @@
     "devDependencies": {
         "@types/fs-extra": "^5.1.0",
         "@types/html-entities": "^1.2.16",
-        "@types/lodash": "^4.14.138",
+        "@types/lodash": "^4.14.149",
         "@types/marked": "^0.6.5",
         "@types/mocha": "^5.2.7",
-        "@types/node": "10.1.4",
-        "tslint": "^5.20.0",
-        "typescript": "3.4.5",
+        "@types/node": "^10.17.16",
+        "tslint": "^5.20.1",
+        "typescript": "^3.8.2",
+        "vsce": "^1.73.0",
         "vscode": "^1.1.36"
     },
     "dependencies": {
         "fs-extra": "^8.1.0",
         "html-entities": "^1.2.1",
-        "humanize-duration": "^3.20.1",
+        "humanize-duration": "^3.21.0",
         "lodash": "^4.17.15",
-        "marked": "^0.7.0",
+        "marked": "^0.8.0",
         "sanitize-filename": "^1.6.3",
-        "vscode-helpers": "^5.1.1"
+        "vscode-helpers": "^6.0.0"
     }
 }

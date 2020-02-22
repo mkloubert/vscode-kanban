@@ -1,0 +1,20 @@
+name: Publish
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.0.0
+      - uses: actions/setup-node@v1.1.0
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+      - run: npm install
+      - run: npm run compile
+      - run: npm run publish
+        env:
+            VSCE_TOKEN: ${{secrets.VSCE_TOKEN}}
