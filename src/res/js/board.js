@@ -156,6 +156,12 @@ function vsckb_edit_card(i, opts) {
     const CATEGORY_FIELD = WIN.find('#vsckb-edit-card-category');
     CATEGORY_FIELD.val( vsckb_to_string(i.category).trim() );
 
+    const DEADLINE_FIELD = WIN.find('#vsckb-edit-card-deadline');
+    DEADLINE_FIELD.val( vsckb_to_string(i.deadline).trim() );
+
+    const FINISHED_FIELD = WIN.find('#vsckb-edit-card-finisheddate');
+    FINISHED_FIELD.val( vsckb_to_string(i.finisheddate).trim() );
+
     const ASSIGNED_TO_FIELD = WIN.find('#vsckb-edit-card-assigned-to');
     ASSIGNED_TO_FIELD.val( vsckb_to_string(user) );
 
@@ -188,6 +194,16 @@ function vsckb_edit_card(i, opts) {
             category = undefined;
         }
 
+        let deadline = vsckb_to_string( DEADLINE_FIELD.val() ).trim();
+        if ('' === deadline) {
+            deadline = undefined;
+        }
+
+        let finisheddate = vsckb_to_string( FINISHEDDATE_FIELD.val() ).trim();
+        if ('' === finisheddate) {
+            finisheddate = undefined;
+        }
+
         i.assignedTo = vsckb_get_assigned_to_val(ASSIGNED_TO_FIELD);
         i.title = TITLE;
         i.description = vsckb_get_card_description_markdown( descriptionField );
@@ -195,6 +211,8 @@ function vsckb_edit_card(i, opts) {
         i.prio = PRIO;
         i.type = type;
         i.category = category;
+        i.deadline = deadline;
+        i.finisheddate = finisheddate;
         i.references = references;
         
         vsckb_save_board();
@@ -821,6 +839,16 @@ function vsckb_refresh_card_view(onAdded) {
                 }
             }
 
+            let deadline;
+            if (card.deadline) {
+                deadline = card.deadline;
+            }
+
+            let finisheddate;
+            if (card.finisheddate) {
+                finisheddate = card.finisheddate;
+            }
+
             let assignedTo;
             if (card.assignedTo) {
                 assignedTo = card.assignedTo.name;
@@ -899,6 +927,8 @@ function vsckb_refresh_card_view(onAdded) {
                     assigned_to: assignedTo,
                     cat: card.category,
                     category: card.category,
+                    deadline: card.deadline,
+                    finisheddate: card.finisheddate,
                     description: GET_MARKDOWN_VALUE(card.description),
                     details: GET_MARKDOWN_VALUE(card.details),
                     'false': false,
@@ -946,6 +976,9 @@ function vsckb_refresh_card_view(onAdded) {
                                     '<div class="vsckb-kanban-card-info bg-white text-dark">'  +
                                     '<div class="vsckb-kanban-card-title font-weight-bold" />'  +
                                     '<div class="vsckb-kanban-card-category" />'  +
+                                    '<div class="vsckb-kanban-card-assignedto" />'  +
+                                    '<div class="vsckb-kanban-card-deadline" />'  +
+                                    '<div class="vsckb-kanban-card-finisheddate" />'  +
                                     '<div class="vsckb-kanban-card-progress" />' + 
                                     '<div class="vsckb-kanban-card-body" />'  +
                                     '</div>'  +
@@ -962,6 +995,15 @@ function vsckb_refresh_card_view(onAdded) {
 
             const NEW_ITEM_CATEGORY = NEW_ITEM.find('.vsckb-kanban-card-category');
             NEW_ITEM_CATEGORY.hide();
+
+            const NEW_ITEM_ASSIGNEDTO = NEW_ITEM.find('.vsckb-kanban-card-assignedto');
+            NEW_ITEM_ASSIGNEDTO.hide();
+
+            const NEW_ITEM_DEADLINE = NEW_ITEM.find('.vsckb-kanban-card-deadline');
+            NEW_ITEM_DEADLINE.hide();
+
+            const NEW_ITEM_FINISHEDDATE = NEW_ITEM.find('.vsckb-kanban-card-finisheddate');
+            NEW_ITEM_FINISHEDDATE.hide();
 
             const NEW_ITEM_PROGRESS = NEW_ITEM.find('.vsckb-kanban-card-progress');
             NEW_ITEM_PROGRESS.hide();
@@ -1084,6 +1126,24 @@ function vsckb_refresh_card_view(onAdded) {
             if ('' !== category) {
                 NEW_ITEM_CATEGORY.text( category );
                 NEW_ITEM_CATEGORY.show();
+            }
+
+            let assignedto = "Assigned to: " +  vsckb_to_string(i.assignedTo.name).trim();
+            if ('' !== assignedto) {
+                NEW_ITEM_ASSIGNEDTO.text( assignedto );
+                NEW_ITEM_ASSIGNEDTO.show();
+            }
+
+            let deadline = "Deadline: " + vsckb_to_string(i.deadline).trim();
+            if ('' !== deadline) {
+                NEW_ITEM_DEADLINE.text( deadline );
+                NEW_ITEM_DEADLINE.show();
+            }
+
+            let finisheddate = "Finished Date: " + vsckb_to_string(i.finisheddate).trim();
+            if ('' !== assignedto) {
+                NEW_ITEM_FINISHEDDATE.text( finisheddate );
+                NEW_ITEM_FINISHEDDATE.show();
             }
 
             vsckb_append_card_content(
@@ -1799,6 +1859,8 @@ jQuery(() => {
         const PRIO_FIELD = WIN.find('#vsckb-new-card-prio');
 
         const CATEGORY_FIELD = WIN.find('#vsckb-new-card-category');
+        const DEADLINE_FIELD = WIN.find('#vsckb-new-card-deadline');
+        const FINISHEDDATE_FIELD = WIN.find('#vsckb-new-card-finisheddate');
         
         WIN.attr('vsckb-type', TYPE);
 
@@ -1838,6 +1900,16 @@ jQuery(() => {
                 category = undefined;
             }
 
+            let deadline = vsckb_to_string( DEADLINE_FIELD.val() ).trim();
+            if ('' === deadline) {
+                deadline = undefined;
+            }
+
+            let finisheddate = vsckb_to_string( FINISHEDDATE_FIELD.val() ).trim();
+            if ('' === finisheddate) {
+                finisheddate = undefined;
+            }
+
             let simpleIDs;
             if (boardSettings) {
                 simpleIDs = boardSettings.simpleIDs;
@@ -1855,6 +1927,8 @@ jQuery(() => {
             const NEW_CARD = {
                 assignedTo: vsckb_get_assigned_to_val( ASSIGNED_TO_FIELD ),
                 category: category,
+                deadline: deadline,
+                finisheddate: finisheddate,
                 creation_time: CREATION_TIME.toISOString(),
                 description: vsckb_get_card_description_markdown( descriptionField ),
                 details: vsckb_get_card_description_markdown( detailsField ),
