@@ -79,7 +79,7 @@ body main .row .col .vsckb-card .card-body {
     padding: 2px 8px;
 }
 
-.vsckb-kanban-card .vsckb-kanban-card-info .vsckb-kanban-card-category .vsckb-kanban-card-deadline .vsckb-kanban-card-finisheddate {
+.vsckb-kanban-card .vsckb-kanban-card-info .vsckb-kanban-card-category .vsckb-kanban-card-deadline .vsckb-kanban-card-finished-date .vsckb-kanban-card-assigned-to {
     clear: both;
     display: block;
     font-size: 0.75em;

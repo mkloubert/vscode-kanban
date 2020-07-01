@@ -76,7 +76,7 @@ export interface BoardCard {
     /**
      * The (optional) date, the cards has been finished.
      */
-    finisheddate?: string;
+    finished_date?: string;
     /**
      * The (optional) description (data).
      */
@@ -585,9 +585,9 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         <input type="text" class="form-control" id="vsckb-new-card-deadline">
                     </div>
 
-                    <div class="form-group vsckb-card-finisheddate">
-                        <label for="vsckb-new-card-finisheddate">Finished Date</label>
-                        <input type="text" class="form-control" id="vsckb-new-card-finisheddate">
+                    <div class="form-group vsckb-card-finished-date">
+                        <label for="vsckb-new-card-finished-date">Finished Date</label>
+                        <input type="text" class="form-control" id="vsckb-new-card-finished-date">
                     </div>
 
                     <div class="row">
@@ -744,9 +744,9 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         <input type="text" class="form-control" id="vsckb-edit-card-deadline">
                     </div>
 
-                    <div class="form-group vsckb-card-finisheddate">
-                        <label for="vsckb-edit-card-finisheddate">Finished Date</label>
-                        <input type="text" class="form-control" id="vsckb-edit-card-finisheddate">
+                    <div class="form-group vsckb-card-finished-date">
+                        <label for="vsckb-edit-card-finished-date">Finished Date</label>
+                        <input type="text" class="form-control" id="vsckb-edit-card-finished-date">
                     </div>
 
                     <div class="row">
