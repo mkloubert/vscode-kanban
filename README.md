@@ -446,6 +446,7 @@ The complete API documentation can be found [here](https://mkloubert.github.io/v
 
 * [Hans De Mulder](https://github.com/Styxxy)
 * [Philippe Miossec](https://github.com/pmiossec)
+* [Alvaro F. García](https://github.com/rainbyte)
 
 ## Related projects [[&uarr;](#table-of-contents)]
 
