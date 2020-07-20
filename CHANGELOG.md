@@ -7,6 +7,11 @@
 * added `Deadline` and `Finished Date` fields for cards
 * show `Assigned To`, `Deadline` and `Finished Date` fields on cards
 
+## 1.28.1 (July 3rd, 2020; Visual Studio Code 1.43)
+
+* extension requires at least [Visual Studio Code 1.43](https://code.visualstudio.com/updates/v1_43) now
+* [rainbyte](https://github.com/rainbyte) fixed issue when opening links via xdg-open.
+
 ## 1.28.0 (April 6th, 2020; Visual Studio Code 1.43)
 
 * extension requires at least [Visual Studio Code 1.43](https://code.visualstudio.com/updates/v1_43) now

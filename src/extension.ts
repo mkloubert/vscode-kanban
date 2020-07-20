@@ -498,7 +498,7 @@ export function open(target: string, opts?: OpenOptions): Promise<ChildProcess.C
                 if (app) {
                     cmd = app;
                 } else {
-                    cmd = Path.join(__dirname, 'xdg-open');
+                    cmd = 'xdg-open';
                 }
 
                 if (appArgs.length > 0) {
