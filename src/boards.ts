@@ -70,6 +70,14 @@ export interface BoardCard {
      */
     creation_time?: string;
     /**
+     * The (optional) date, the cards's deadline date.
+     */
+    deadline?: string;
+    /**
+     * The (optional) date, the cards has been finished.
+     */
+    finished_date?: string;
+    /**
      * The (optional) description (data).
      */
     description?: BoardCardContentValue;
@@ -572,6 +580,16 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                         <input type="text" class="form-control" id="vsckb-new-card-assigned-to">
                     </div>
 
+                    <div class="form-group vsckb-card-deadline">
+                        <label for="vsckb-new-card-deadline">Deadline</label>
+                        <input type="text" class="form-control" id="vsckb-new-card-deadline">
+                    </div>
+
+                    <div class="form-group vsckb-card-finished-date">
+                        <label for="vsckb-new-card-finished-date">Finished Date</label>
+                        <input type="text" class="form-control" id="vsckb-new-card-finished-date">
+                    </div>
+
                     <div class="row">
                         <div class="col col-12">
                             <ul class="nav nav-pills vsckb-card-description-details-tablist" id="vsckb-new-card-description-details-tablist" role="tablist">
@@ -719,6 +737,16 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
                     <div class="form-group vsckb-card-assigned-to">
                         <label for="vsckb-edit-card-assigned-to">Assigned To</label>
                         <input type="text" class="form-control" id="vsckb-edit-card-assigned-to">
+                    </div>
+
+                    <div class="form-group vsckb-card-deadline">
+                        <label for="vsckb-edit-card-deadline">Deadline</label>
+                        <input type="text" class="form-control" id="vsckb-edit-card-deadline">
+                    </div>
+
+                    <div class="form-group vsckb-card-finished-date">
+                        <label for="vsckb-edit-card-finished-date">Finished Date</label>
+                        <input type="text" class="form-control" id="vsckb-edit-card-finished-date">
                     </div>
 
                     <div class="row">

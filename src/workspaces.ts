@@ -1069,6 +1069,15 @@ async function exportBoardCardsTo(opts: ExportBoardCardsToOptions) {
                 META['Category'] = category;
             }
 
+            let deadline = vscode_helpers.toStringSafe(C.deadline).trim();
+            if ('' !== deadline) {
+                META['Deadline'] = deadline;
+            }
+            let finished_date = vscode_helpers.toStringSafe(C.finished_date).trim();
+            if ('' !== finished_date) {
+                META['Finished date'] = finished_date;
+            }
+
             let creationTime = vscode_helpers.toStringSafe(C.creation_time).trim();
             if ('' !== creationTime) {
                 try {
