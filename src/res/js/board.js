@@ -1130,8 +1130,8 @@ function vsckb_refresh_card_view(onAdded) {
 
             let assignedto = "Assigned To: " +  vsckb_to_string(i.assignedTo.name).trim();
             if ('' !== assignedto) {
-                NEW_ITEM_ASSIGNEDTO.text( assignedto );
-                NEW_ITEM_ASSIGNEDTO.show();
+                NEW_ITEM_ASSIGNED_TO.text( assignedto );
+                NEW_ITEM_ASSIGNED_TO.show();
             }
 
             let deadline = "Deadline: " + vsckb_to_string(i.deadline).trim();
