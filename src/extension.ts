@@ -24,6 +24,7 @@ import * as Marked from 'marked';
 import * as Moment from 'moment';
 import * as OS from 'os';
 import * as Path from 'path';
+import * as vsckb_announcements from './announcements';
 import * as vsckb_workspaces from './workspaces';
 import * as vscode from 'vscode';
 import * as vscode_helpers from 'vscode-helpers';
@@ -357,6 +358,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 }
             } catch { }
         }
+    });
+
+    // announcements
+    WF.next(async () => {
+        try {
+            await vsckb_announcements.showAnnouncements(context);
+        } catch { }
     });
 
     if (!isDeactivating) {
