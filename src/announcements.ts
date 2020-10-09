@@ -36,7 +36,7 @@ export async function showAnnouncements(context: vscode.ExtensionContext) {
         const VALUE = context.globalState.get<string>(REFACTORING_ANNOUNCEMENT_KEY);
         if (VALUE !== REFACTORING_ANNOUNCEMENT_DNSA_VALUE) {
             const BTN = await vscode.window.showWarningMessage<MessageItem>(
-                "[vscode-kanban] I would like to refactor the extension and I need your help 😀 Click on 'Show more' button to open the issue on GitHub with more information.",
+                "[VSCODE-KANBAN] I would like to refactor the extension and I need your help 😀 Click on 'Show more' button to open the issue on GitHub with more information.",
                 {
                     id: 1,
                     title: 'Show me more ...',
