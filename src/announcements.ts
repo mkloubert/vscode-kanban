@@ -18,7 +18,7 @@
 import * as vscode from 'vscode';
 
 const REFACTORING_ANNOUNCEMENT_KEY = 'vsckb_announcement_20201009_655f729b';
-const REFACTORING_ANNOUNCEMENT_DNSA_VALUE = '1';
+const REFACTORING_ANNOUNCEMENT_DNSA_VALUE = '2';
 
 interface MessageItem extends vscode.MessageItem {
     id: number;
@@ -36,17 +36,21 @@ export async function showAnnouncements(context: vscode.ExtensionContext) {
         const VALUE = context.globalState.get<string>(REFACTORING_ANNOUNCEMENT_KEY);
         if (VALUE !== REFACTORING_ANNOUNCEMENT_DNSA_VALUE) {
             const BTN = await vscode.window.showWarningMessage<MessageItem>(
-                "[VSCODE-KANBAN] I would like to refactor the extension and I need your help 😀 Click on 'Show more' button to open the issue on GitHub with more information.",
+                "[VSCODE-KANBAN] Do you like to code in React.js and to help refactoring the view?",
                 {
                     id: 1,
-                    title: 'Show me more ...',
+                    title: 'YES, show me more ...',
                 },
                 {
                     id: 2,
-                    title: 'Later',
+                    title: 'No, but I would like to DONATE ...',
                 },
                 {
                     id: 3,
+                    title: 'Later ...',
+                },
+                {
+                    id: 4,
                     title: 'Do not show again',
                 }
             );
@@ -54,12 +58,47 @@ export async function showAnnouncements(context: vscode.ExtensionContext) {
             if (BTN) {
                 switch (BTN.id) {
                     case 1:
-                        doNotShowAgain = true;
-                        await vscode.env.openExternal(vscode.Uri.parse('https://github.com/mkloubert/vscode-kanban/issues/53'));
+                        // yes
+                        doNotShowAgain = await vscode.env.openExternal(vscode.Uri.parse('https://github.com/mkloubert/vscode-kanban/issues/54'));
                         break;
-        
-                    case 3:
-                        doNotShowAgain = true;
+
+                    case 2:
+                        // donate
+                        {
+                            const DONATE_BTN = await vscode.window.showWarningMessage<MessageItem>(
+                                "Thanks a lot 🙏🙏🙏 What service do you like to use?",
+                                {
+                                    id: 1,
+                                    title: 'PayPal',
+                                },
+                                {
+                                    id: 2,
+                                    title: 'open collective',
+                                },
+                                {
+                                    id: 3,
+                                    title: 'Not now',
+                                },
+                            );
+
+                            if (DONATE_BTN) {
+                                switch (DONATE_BTN.id) {
+                                    case 1:
+                                        // PayPal
+                                        doNotShowAgain = await vscode.env.openExternal(vscode.Uri.parse('https://paypal.me/MarcelKloubert'));
+                                        break;
+
+                                    case 2:
+                                        // open collective
+                                        doNotShowAgain = await vscode.env.openExternal(vscode.Uri.parse('https://opencollective.com/vscode-kanban'));
+                                        break;
+                                }
+                            }
+                        }
+                        break;
+
+                    case 4:
+                        doNotShowAgain = true;  // do not show again
                         break;
                 }
             }
