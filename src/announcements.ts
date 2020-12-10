@@ -39,19 +39,19 @@ export async function showAnnouncements(context: vscode.ExtensionContext) {
                 "[VSCODE-KANBAN] Do you like to code in React.js and to help refactoring the view?",
                 {
                     id: 1,
-                    title: 'YES, show me more ...',
+                    title: 'YES',
                 },
                 {
                     id: 2,
-                    title: 'No, but I would like to DONATE ...',
+                    title: 'No, but DONATE',
                 },
                 {
                     id: 3,
-                    title: 'Later ...',
+                    title: 'Later',
                 },
                 {
                     id: 4,
-                    title: 'Do not show again',
+                    title: "Don't show again",
                 }
             );
 
