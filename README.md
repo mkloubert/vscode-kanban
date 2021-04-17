@@ -399,6 +399,8 @@ You also have to update the extension settings:
 
 ### Columns [[&uarr;](#customization-)]
 
+If you want to customize your columns, you have to modify the `settings.json` file inside your `.vscode` sub folder of the underlying workspace or your home directory.
+
 An example of setting up custom column names:
 
 ```json
@@ -413,6 +415,9 @@ An example of setting up custom column names:
     }
 }
 ```
+
+Customizable options:
+- column name
 
 ### CSS [[&uarr;](#customization-)]
 
