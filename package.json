@@ -215,6 +215,6 @@
         "lodash": "4.17.21",
         "marked": "4.0.0",
         "sanitize-filename": "1.6.3",
-        "vscode-helpers": "8.0.0"
+        "vscode-helpers": "9.0.0"
     }
 }
