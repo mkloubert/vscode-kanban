@@ -965,8 +965,6 @@ async function exportBoardCardsTo(opts: ExportBoardCardsToOptions) {
     let dir = opts.dir;
     await vscode_helpers.createDirectoryIfNeeded(dir);
 
-    const HTML_ENCODER = new HtmlEntities.AllHtmlEntities();
-
     const FILENAME_FORMAT = 'vscode-kanban_{0}_{1}_{2}';
 
     if (opts.cleanup) {
@@ -1086,14 +1084,14 @@ async function exportBoardCardsTo(opts: ExportBoardCardsToOptions) {
                 }
             }
 
-            let md = `# ${ HTML_ENCODER.encode( vscode_helpers.toStringSafe(C.title).trim() ) }
+            let md = `# ${ HtmlEntities.encode( vscode_helpers.toStringSafe(C.title).trim() ) }
 
 ## Meta
 `;
 
             for (const M of Object.keys(META).sort()) {
                 md += `
-* ${ HTML_ENCODER.encode(M) }: \`${ HTML_ENCODER.encode( META[M] ) }\``;
+* ${ HtmlEntities.encode(M) }: \`${ HtmlEntities.encode( META[M] ) }\``;
             }
 
             if (!vscode_helpers.isEmptyString(DESCRIPTION)) {

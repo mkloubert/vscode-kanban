@@ -420,8 +420,6 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
     }
 
     private generateHTML() {
-        const HTML_ENC = new HtmlEntities.AllHtmlEntities();
-
         const GET_RES_URI = (p: string) => {
             return this.getResourceUri(p);
         };
@@ -456,7 +454,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-dark bg-secondary vsckb-card" id="vsckb-card-todo">
                 <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-dark">
-                    <span class="vsckb-title">${ HTML_ENC.encode( GET_COLUMN_NAME('todo', 'Todo') ) }</span>
+                    <span class="vsckb-title">${ HtmlEntities.encode( GET_COLUMN_NAME('todo', 'Todo') ) }</span>
 
                     <div class="vsckb-buttons float-right">
                         <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
@@ -472,7 +470,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-primary vsckb-card" id="vsckb-card-in-progress">
                 <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
-                    <span class="vsckb-title">${ HTML_ENC.encode( GET_COLUMN_NAME('in-progress', 'In Progress') ) }</span>
+                    <span class="vsckb-title">${ HtmlEntities.encode( GET_COLUMN_NAME('in-progress', 'In Progress') ) }</span>
 
                     <div class="vsckb-buttons float-right">
                         <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
@@ -488,7 +486,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-warning vsckb-card" id="vsckb-card-testing">
                 <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
-                    <span class="vsckb-title">${ HTML_ENC.encode( GET_COLUMN_NAME('testing', 'Testing') ) }</span>
+                    <span class="vsckb-title">${ HtmlEntities.encode( GET_COLUMN_NAME('testing', 'Testing') ) }</span>
 
                     <div class="vsckb-buttons float-right">
                         <a class="btn btn-sm vsckb-add-btn" title="Add Card ...">
@@ -504,7 +502,7 @@ export class KanbanBoard extends vscode_helpers.DisposableBase {
         <div class="col col-6 col-md-3 h-100">
             <div class="card text-white bg-success vsckb-card" id="vsckb-card-done">
                 <div class="card-header font-weight-bold vsckb-primary-card-header border border-dark border-bottom-0 text-white">
-                    <span class="vsckb-title">${ HTML_ENC.encode( GET_COLUMN_NAME('done', 'Done') ) }</span>
+                    <span class="vsckb-title">${ HtmlEntities.encode( GET_COLUMN_NAME('done', 'Done') ) }</span>
 
                     <div class="vsckb-buttons float-right">
                         <a class="btn btn-sm vsckb-clear-btn" title="Clear ...">

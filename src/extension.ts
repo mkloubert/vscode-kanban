@@ -335,7 +335,6 @@ export async function activate(context: vscode.ExtensionContext) {
                                     gfm: true,
                                     mangle: true,
                                     silent: true,
-                                    tables: true,
                                     sanitize: true,
                                 });
                             } catch (e) {

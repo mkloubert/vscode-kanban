@@ -155,8 +155,6 @@ ${ opts.getFooter ? opts.getFooter() : '' }
 export function generateHeader(opts: GenerateHeaderOptions) {
     const AJAX_LOADER_16x11 = `${ opts.getResourceUri('img/ajax-loader-16x11.gif') }`;
 
-    const HTML_ENCODER = new HtmlEntities.AllHtmlEntities();
-
     const DOC_TITLE = getDocumentTitle(opts.title);
 
     return `<!doctype html>
@@ -220,7 +218,7 @@ export function generateHeader(opts: GenerateHeaderOptions) {
             const VSCKB_AJAX_LOADER_16x11 = ${ JSON.stringify( AJAX_LOADER_16x11 ) };
         </script>
 
-        <title>${ HTML_ENCODER.encode(DOC_TITLE) }</title>
+        <title>${ HtmlEntities.encode(DOC_TITLE) }</title>
     </head>
     <body>
         <div id="vsckb-body-top" class="clearfix"></div>
@@ -264,8 +262,6 @@ ${ generateFooter({
  * @return {string} The generated HTML code.
  */
 export function generateNavBarHeader(opts: GenerateNavBarHeaderOptions) {
-    const HTML_ENCODER = new HtmlEntities.AllHtmlEntities();
-
     const DOC_TITLE = getDocumentTitle(opts.title);
 
     return `
@@ -273,7 +269,7 @@ export function generateNavBarHeader(opts: GenerateNavBarHeaderOptions) {
     <nav class="navbar navbar-dark fixed-top bg-dark">
         <a class="navbar-brand" href="#">
             <img src="${ opts.getResourceUri('img/icon.svg') }" width="30" height="30" class="d-inline-block align-top" alt="">
-            <span>${ HTML_ENCODER.encode(DOC_TITLE) }</span>
+            <span>${ HtmlEntities.encode(DOC_TITLE) }</span>
         </a>
 
         <form class="form-inline">
