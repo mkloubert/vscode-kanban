@@ -213,7 +213,7 @@
         "html-entities": "2.3.2",
         "humanize-duration": "3.27.0",
         "lodash": "4.17.21",
-        "marked": "4.0.0",
+        "marked": "4.0.10",
         "sanitize-filename": "1.6.3",
         "vscode-helpers": "9.0.0"
     }
