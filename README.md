@@ -426,7 +426,7 @@ Log files are stored inside the `.vscode-kanban/.logs` subfolder of the user's h
 
 ## Support and contribute [[&uarr;](#table-of-contents)]
 
-If you like the extension, you can support the project by sending a [donation via PayPal](https://paypal.me/MarcelKloubert) to [me](https://github.com/mkloubert).
+If you like the extension, you can support me at https://marcel.coffee
 
 To contribute, you can [open an issue](https://github.com/mkloubert/vscode-kanban/issues) and/or fork this repository.
 
