@@ -170,7 +170,7 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
-        "build": "(rm -r ./out || true) && (tsc -p ./) && (mkdir \"./out/res\") && (cp -r ./src/res/* ./out/res)",
+        "build": "(del ./out) && (tsc -p ./) && (mkdir \"./out/res\") && (cp -r ./src/res/* ./out/res)",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
@@ -181,8 +181,18 @@
     "badges": [
         {
             "description": "PayPal Donate",
-            "url": "https://img.shields.io/badge/Donate-PayPal-green.svg",
+            "url": "https://img.shields.io/badge/paypal-donate-blue.svg",
             "href": "https://paypal.me/MarcelKloubert"
+        },
+        {
+            "description": "Patreon Donate",
+            "url": "https://img.shields.io/badge/patreon-donate-red.svg",
+            "href": "https://patreon.com/mkloubert"
+        },
+        {
+            "description": "Buy me a Coffee",
+            "url": "https://img.shields.io/badge/buy%20me%20a%20coffee-donate-orange.svg",
+            "href": "https://buymeacoffee.com/mkloubert"
         }
     ],
     "author": {
@@ -203,6 +213,7 @@
         "@types/marked": "4.0.3",
         "@types/mocha": "9.1.1",
         "@types/node": "16.11.32",
+        "del-cli": "4.0.1",
         "tslint": "6.1.3",
         "typescript": "4.4.4",
         "vsce": "2.7.0",
