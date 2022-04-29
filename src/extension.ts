@@ -330,7 +330,7 @@ export async function activate(context: vscode.ExtensionContext) {
                                     }
                                 );
 
-                                changeLogView.webview.html = Marked(MARKDOWN, {
+                                changeLogView.webview.html = Marked.marked(MARKDOWN, {
                                     breaks: true,
                                     gfm: true,
                                     mangle: true,
