@@ -18,7 +18,7 @@
 import * as vscode from 'vscode';
 
 const REFACTORING_ANNOUNCEMENT_KEY = 'vsckb_announcement_20201009_655f729b';
-const REFACTORING_ANNOUNCEMENT_DNSA_VALUE = '2';
+const REFACTORING_ANNOUNCEMENT_DNSA_VALUE = '3';
 
 interface MessageItem extends vscode.MessageItem {
     id: number;
@@ -36,7 +36,7 @@ export async function showAnnouncements(context: vscode.ExtensionContext) {
         const VALUE = context.globalState.get<string>(REFACTORING_ANNOUNCEMENT_KEY);
         if (VALUE !== REFACTORING_ANNOUNCEMENT_DNSA_VALUE) {
             const BTN = await vscode.window.showWarningMessage<MessageItem>(
-                "[VSCODE-KANBAN] Do you like to code in React.js and to help refactoring the view?",
+                "[VSCODE-KANBAN] Do you like to code in TypeScript and/or React.js and help refactoring the extension?",
                 {
                     id: 1,
                     title: 'YES',
@@ -59,38 +59,29 @@ export async function showAnnouncements(context: vscode.ExtensionContext) {
                 switch (BTN.id) {
                     case 1:
                         // yes
-                        doNotShowAgain = await vscode.env.openExternal(vscode.Uri.parse('https://github.com/mkloubert/vscode-kanban/issues/54'));
+                        doNotShowAgain = await vscode.env.openExternal(vscode.Uri.parse('https://github.com/vscode-kanban/vscode-kanban/issues/16'));
                         break;
 
                     case 2:
                         // donate
                         {
                             const DONATE_BTN = await vscode.window.showWarningMessage<MessageItem>(
-                                "Thanks a lot 🙏🙏🙏 What service do you like to use?",
+                                "Thanks a lot 🙏🙏🙏 What whould you like to do?",
                                 {
                                     id: 1,
-                                    title: 'PayPal',
+                                    title: "Open author's homepage",
                                 },
                                 {
                                     id: 2,
-                                    title: 'open collective',
-                                },
-                                {
-                                    id: 3,
-                                    title: 'Not now',
+                                    title: 'Currently nothing',
                                 },
                             );
 
                             if (DONATE_BTN) {
                                 switch (DONATE_BTN.id) {
                                     case 1:
-                                        // PayPal
-                                        doNotShowAgain = await vscode.env.openExternal(vscode.Uri.parse('https://paypal.me/MarcelKloubert'));
-                                        break;
-
-                                    case 2:
-                                        // open collective
-                                        doNotShowAgain = await vscode.env.openExternal(vscode.Uri.parse('https://opencollective.com/vscode-kanban'));
+                                        // author's homepage
+                                        doNotShowAgain = await vscode.env.openExternal(vscode.Uri.parse('https://marcel.coffee/'));
                                         break;
                                 }
                             }
